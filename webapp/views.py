@@ -24,6 +24,9 @@ class RegisterView(BaseView):
             return_url='/'
         )
 
+    def is_visible(self):
+        return False
+
 
 class BaseView(ModelView):
     form_excluded_columns = ['create_date', 'modify_date']
