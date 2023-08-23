@@ -13,11 +13,10 @@ def setup_flask_admin(app_instance, session):
         name='Admin',
         template_mode='bootstrap4',
         url='/',
-        # base_template='base.html',
-        index_view=vw.IndexView(name='Home', url='/')
+        index_view=vw.IndexView(name='Home', url='/')  # noqa
     )
     admin.init_app(app_instance)
-    admin.add_view(vw.RegisterView(name='Register', endpoint='register'))
+    admin.add_view(vw.RegisterView(name='Register', endpoint='register'))  # noqa
     admin.add_view(vw.ParentView(mdl.Parent, session, name='Parents'))
     admin.add_view(vw.ChildView(mdl.Child, session, name='Children'))
     admin.add_view(vw.GiftView(mdl.Gift, session, name='Gifts'))
