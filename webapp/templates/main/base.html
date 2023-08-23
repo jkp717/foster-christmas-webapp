@@ -1,0 +1,20 @@
+{% extends 'admin/master.html' %}
+
+{% block head_tail %}
+  {{ super() }}
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block page_body %}
+<div class="">
+  <nav class="navbar navbar-light" style="background-color: #6A994E;">
+    <a class="navbar-brand" href="/">
+      <img src="{{ url_for('static', filename='img/gift-open-white.png') }}" width="50" height="50" alt="">
+      <span class="navbar-text align-middle">Pulaski County Hope for the Holidays</span>
+    </a>
+  </nav>
+  <div class="container index-inner-container">
+    {% block page_container %}{% endblock %}
+  </div>
+</div>
+{% endblock %}
