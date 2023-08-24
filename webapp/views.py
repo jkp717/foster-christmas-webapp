@@ -1,7 +1,17 @@
-from flask_admin import expose, BaseView
-from flask_admin.contrib.sqla import ModelView
+from sqlalchemy.exc import IntegrityError
 
-from .models import db, Gift, Child
+from flask import flash, request, redirect
+from flask_admin import expose, BaseView
+from flask_admin.model.helpers import get_mdict_item_or_list
+from flask_admin.contrib.sqla import ModelView
+from flask_admin.babel import gettext
+from flask_admin.form import rules, FormOpts
+from wtforms_alchemy import PhoneNumberField
+from flask_admin.contrib.sqla.filters import FilterLike, FilterEqual
+
+from .models import db, Gift, Child, Parent, DhsOffice, Gender, Race, ShoeSize, ClothingSize, FavColor
+from .util import get_race_options, get_gender_options, get_fav_color_options, get_shoe_size_options, \
+    get_dhs_office_options, get_clothing_size_options
 
 
 class IndexView(BaseView):
@@ -14,14 +24,95 @@ class IndexView(BaseView):
 
 
 class RegisterView(BaseView):
+    can_create = True  # Sets if 'add another' option is present
+    _raised_integrity_error = False  # flag if unique constraint fails
+
+    def handle_integrity_error(self, exc):
+        if isinstance(exc, IntegrityError):
+            self._raised_integrity_error = True
+            return True
+        return False
 
     @expose('/', methods=['GET', 'POST'])
-    def register(self):
-        form = ChildView(Child, db.session).create_form()
+    def parent(self):
+        model_view = ParentView(Parent, db.session)
+        return_url = '/'
+        id = get_mdict_item_or_list(request.args, 'id')
+        if id is not None:
+            model = model_view.get_one(id)
+            if model is None:
+                flash(gettext('Parent record does not exist.'), 'error')
+                return redirect(return_url)
+            form = model_view.edit_form(obj=model)
+            form_opts = FormOpts(
+                widget_args=model_view.form_widget_args,
+                form_rules=model_view._form_edit_rules  # noqa
+            )
+            if not hasattr(form, '_validated_ruleset') or not form._validated_ruleset:  # noqa
+                model_view._validate_form_instance(ruleset=model_view._form_edit_rules, form=form)  # noqa
+            if model_view.validate_form(form):
+                if model_view.update_model(form, model):
+                    flash(gettext('Record was successfully saved.'), 'success')
+                    return redirect(model_view.get_save_return_url(model, is_created=False))
+            if request.method == 'GET' or form.errors:
+                model_view.on_form_prefill(form, id)
+        else:
+            form = model_view.create_form()
+            form_opts = FormOpts(
+                widget_args=model_view.form_widget_args,
+                form_rules=model_view._form_create_rules  # noqa
+            )
+            if model_view.validate_form(form):
+                model_view.handle_view_exception = self.handle_integrity_error
+                model = model_view.create_model(form)
+                if self._raised_integrity_error:
+                    model = db.session.query(Parent).filter(
+                        Parent.first_name == form.first_name.data.upper(),
+                        Parent.last_name == form.last_name.data.upper(),
+                        Parent.email == form.email.data.lower(),
+                    ).first()
+                if model:
+                    flash(gettext('Your information has been saved! '), 'success')
+                    return redirect(self.get_url('register.child', parent_id=model.id))
         return self.render(
             'main/register.html',
             form=form,
-            return_url='/'
+            form_opts=form_opts,
+            cancel_text='Cancel',
+            submit_text='Add Children',
+            return_url='/',
+            add_another=False
+        )
+
+    @expose('/<int:parent_id>/child', methods=['GET', 'POST'])
+    def child(self, parent_id):
+        parent = db.session.query(Parent).filter(Parent.id == parent_id).one()
+        if not parent:
+            flash("Unable to find the foster parent information in system!")
+            return redirect('/')
+        model_view = ChildView(Child, db.session)
+        form = model_view.create_form()
+        form.parent.data = parent
+        form.parent.render_kw = {'disabled': ''}
+        form_opts = FormOpts(
+            widget_args=model_view.form_widget_args,
+            form_rules=model_view._form_create_rules  # noqa
+        )
+        if model_view.validate_form(form):
+            model = model_view.create_model(form)
+            if model:
+                flash(gettext('Our records have been updated! Add another child or click finish.'), 'success')
+                if '_add_another' in request.form:
+                    return redirect(self.get_url('register.child', parent_id=parent_id))
+                return redirect('/')
+        return self.render(
+            'main/register.html',
+            form=form,
+            form_opts=form_opts,
+            cancel_text='Cancel',
+            submit_text='Finish',
+            return_url='/',
+            add_another=True
         )
 
     def is_visible(self):
@@ -42,10 +133,29 @@ class BaseView(ModelView):
 
 class ChildView(BaseView):
     column_list = [
-        'first_name', 'last_name', 'parent', 'dhs_case_worker', 'dhs_office', 'age', 'race', 'gender', 'fav_color',
+        'parent', 'first_name', 'last_name', 'dhs_case_worker', 'dhs_office', 'age', 'race', 'gender', 'fav_color',
         'shoe_size', 'clothing_size', 'gifts'
     ]
-    form_columns = column_list
+    column_filters = [
+        'age',
+        FilterLike(Parent.last_name, 'Parent Last Name'),
+        FilterLike(Parent.first_name, 'Parent First Name'),
+        FilterLike('dhs_case_worker', 'Case Worker'),
+        FilterLike('first_name', 'Child First Name'),
+        FilterLike('last_name', 'Child Last Name'),
+        FilterEqual(DhsOffice.office, 'DHS Office', options=get_dhs_office_options),
+        FilterEqual(Race.race, 'Child Race', options=get_race_options),
+        FilterEqual(Gender.gender, 'Child Gender', options=get_gender_options),
+        FilterEqual(ShoeSize.size, 'Shoe Size', options=get_shoe_size_options),
+        FilterEqual(ClothingSize.size, 'Clothing Size', options=get_clothing_size_options),
+        FilterEqual(FavColor.color, 'Favorite Color', options=get_fav_color_options)
+    ]
+    column_searchable_list = [Gift.gift]
+    form_rules = [
+        rules.NestedRule([rules.Header('Foster Parent'), 'parent']),
+        rules.NestedRule([rules.Header('Add Foster Child'), *column_list[1:]])
+    ]
+    form_columns = column_list + ['parent.children']
     inline_models = [(Gift, dict(form_columns=['id', 'gift']))]
     column_labels = {
         'dhs_case_worker': 'Case Worker',
@@ -54,9 +164,20 @@ class ChildView(BaseView):
         'parent': 'Foster Parent'
     }
 
+    @expose('/')
+    def index_view(self):
+        self._refresh_filters_cache()
+        return super(ChildView, self).index_view()
+
 
 class ParentView(BaseView):
-    pass
+    form_columns = ['last_name', 'first_name', 'phone', 'email']
+    form_rules = {
+        rules.FieldSet(rules=form_columns, header='Foster Parent'),
+    }
+    form_overrides = {
+        'phone': PhoneNumberField,
+    }
 
 
 class GiftView(BaseView):

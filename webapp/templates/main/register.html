@@ -1,6 +1,8 @@
 {% extends 'main/base.html' %}
-{% import 'admin/lib.html' as lib with context %}
-{% from 'admin/lib.html' import extra with context %} {# backward compatible #}
+{% import 'main/lib.html' as lib with context %}
+{% from 'main/lib.html' import extra with context %} {# backward compatible #}
+
+{% set render_ctx = h.resolve_ctx() %}
 
 {% block head %}
   {{ super() }}
@@ -8,7 +10,11 @@
 {% endblock %}
 
 {% block page_container %}
-    {{ lib.render_form(form) }}
+    {% if add_another %}
+    {{ lib.render_form(form, return_url, form_opts=form_opts, cancel_text=cancel_text, submit_text=submit_text, extra=extra()) }}
+    {% else %}
+    {{ lib.render_form(form, return_url, form_opts=form_opts, cancel_text=cancel_text, submit_text=submit_text) }}
+    {% endif %}
 {% endblock %}
 
 {% block tail %}

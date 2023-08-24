@@ -1,5 +1,7 @@
 import datetime
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy_utils import PhoneNumberType
+from sqlalchemy.orm import validates
 
 
 db = SQLAlchemy()
@@ -97,8 +99,12 @@ class Child(db.Model):
     create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
 
+    @validates('first_name', 'last_name', 'dhs_case_worker')
+    def convert_upper(self, key, value):
+        return value.upper()
+
     def __repr__(self):
-        return f'{self.last_name}, {self.first_name}'
+        return f'{self.last_name.title()}, {self.first_name.title()}'
 
 
 class Parent(db.Model):
@@ -106,14 +112,25 @@ class Parent(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String)
     last_name = db.Column(db.String)
-    phone = db.Column(db.Integer)
+    phone = db.Column(PhoneNumberType())
     email = db.Column(db.String)
     children = db.relationship('Child', back_populates='parent', uselist=True, cascade="all, delete-orphan")
     create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+    __table_args__ = (
+        db.UniqueConstraint('first_name', 'last_name', 'email', name='_parent_uc'),
+    )
+
+    @validates('first_name', 'last_name')
+    def convert_upper(self, key, value):
+        return value.upper()
+
+    @validates('email')
+    def convert_lower(self, key, value):
+        return value.lower()
 
     def __repr__(self):
-        return f'{self.last_name}, {self.first_name}'
+        return f'{self.last_name.title()}, {self.first_name.title()}'
 
 
 class Gift(db.Model):
@@ -125,5 +142,9 @@ class Gift(db.Model):
     create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
 
+    @validates('gift')
+    def convert_upper(self, key, value):
+        return value.upper()
+
     def __repr__(self):
-        return f'{self.gift}'
+        return f'{self.gift.title()}'

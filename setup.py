@@ -11,6 +11,9 @@ setup(
         'flask',
         'flask_admin',
         'flask_sqlalchemy',
+        'wtforms_alchemy',
+        'phonenumbers',
+        'sqlalchemy'
     ],
 )
 

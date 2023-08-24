@@ -10,13 +10,22 @@ def setup_flask_admin(app_instance, session):
     from webapp import views as vw
 
     admin = Admin(
+        app=app_instance,
         name='Admin',
         template_mode='bootstrap4',
-        url='/',
-        index_view=vw.IndexView(name='Home', url='/')  # noqa
+        endpoint='admin'
     )
-    admin.init_app(app_instance)
-    admin.add_view(vw.RegisterView(name='Register', endpoint='register'))  # noqa
+
+    base = Admin(
+        app=app_instance,
+        name='Hope for the Holidays',
+        template_mode='bootstrap4',
+        url='/',
+        index_view=vw.IndexView(name='Home', endpoint='/')   # noqa
+    )
+    base.add_view(vw.RegisterView(name='Register', endpoint='register'))  # noqa
+
+    # admin views
     admin.add_view(vw.ParentView(mdl.Parent, session, name='Parents'))
     admin.add_view(vw.ChildView(mdl.Child, session, name='Children'))
     admin.add_view(vw.GiftView(mdl.Gift, session, name='Gifts'))
@@ -25,6 +34,7 @@ def setup_flask_admin(app_instance, session):
     admin.add_view(vw.MiscView(mdl.Race, session, name='Ethnicity', category='Form Options'))
     admin.add_view(vw.MiscView(mdl.Gender, session, name='Gender', category='Form Options'))
     admin.add_view(vw.MiscView(mdl.DhsOffice, session, name='DHS Office', category='Form Options'))
+
     return app_instance
 
 
@@ -49,7 +59,6 @@ def create_app(debug=True):
     with app.app_context():
         # Create the database if it doesn't already exist
         if not os.path.exists(app.config['SQLITE_DATABASE_PATH']):
-            print(f"{app.config['SQLALCHEMY_DATABASE_URI']} does not exist")
             db.create_all()
             # create a table name to class mapper
             tbl_to_cls = {}
