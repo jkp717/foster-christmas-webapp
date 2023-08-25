@@ -13,7 +13,8 @@ def setup_flask_admin(app_instance, session):
         app=app_instance,
         name='Admin',
         template_mode='bootstrap4',
-        endpoint='admin'
+        endpoint='/admin',
+        url='/admin'
     )
 
     base = Admin(
@@ -21,7 +22,7 @@ def setup_flask_admin(app_instance, session):
         name='Hope for the Holidays',
         template_mode='bootstrap4',
         url='/',
-        index_view=vw.IndexView(name='Home', endpoint='/')   # noqa
+        index_view=vw.IndexView(name='Home', url='/')
     )
     base.add_view(vw.RegisterView(name='Register', endpoint='register'))  # noqa
 

@@ -44,3 +44,24 @@ h1.display-title {
 .index-inner-container {
     margin-top: 30px;
 }
+
+.list-header {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+}
+
+.list-children {
+    margin-bottom: 30px
+}
+
+.list-children .list-group-item {
+    padding: 0.25rem 1.25rem;
+}
+
+.list-children:first-child .list-group-item:first-child {
+    border-top: 1px solid rgba(0,0,0,.125);
+}
+
+.list-group-flush:last-child .list-group-item:last-child {
+    border-bottom: 1px solid rgba(0,0,0,.125);
+}

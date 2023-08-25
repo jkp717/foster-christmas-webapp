@@ -4,6 +4,40 @@
 
 {% set render_ctx = h.resolve_ctx() %}
 
+{% macro render_child_list() %}
+{% if parent.children is not none %}
+    {% if parent.children|count > 0 %}
+    <div class="list-header">Children</div>
+    <div class="row">
+        <div class="col-sm-12 col-md-6">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th scope="col">Action</th>
+                  <th scope="col">First</th>
+                  <th scope="col">Last</th>
+                  <th scope="col">Age</th>
+                  <th scope="col">Registered Gifts</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for child in parent.children %}
+                <tr>
+                  <td><a href="{{ get_url('register.child', parent_id=parent.id, id=child.id ) }}">EDIT</a> | <a href="{{ get_url('register.child', parent_id=parent.id, id=child.id, delete=True ) }}">DELETE</a></td>
+                  <td>{{ child.first_name }}</td>
+                  <td>{{ child.last_name }}</td>
+                  <td>{{ child.age }}</td>
+                  <td>{{ child.gifts|count }}</td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+{% endif %}
+{% endmacro %}
+
 {% block head %}
   {{ super() }}
   {{ lib.form_css() }}
@@ -11,9 +45,9 @@
 
 {% block page_container %}
     {% if add_another %}
-    {{ lib.render_form(form, return_url, form_opts=form_opts, cancel_text=cancel_text, submit_text=submit_text, extra=extra()) }}
+    {{ lib.render_form(form, return_url, form_opts=form_opts, submit_text=submit_text, extra=extra()) }}
     {% else %}
-    {{ lib.render_form(form, return_url, form_opts=form_opts, cancel_text=cancel_text, submit_text=submit_text) }}
+    {{ lib.render_form(form, return_url, form_opts=form_opts, submit_text=submit_text) }}
     {% endif %}
 {% endblock %}
 

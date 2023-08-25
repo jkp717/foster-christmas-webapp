@@ -76,12 +76,12 @@ class DhsOffice(db.Model):
 class Child(db.Model):
     __tablename__ = "child"
     id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String)
-    last_name = db.Column(db.String)
-    age = db.Column(db.Integer)
-    gender_id = db.Column(db.Integer, db.ForeignKey("gender.id"))
+    first_name = db.Column(db.String, nullable=False)
+    last_name = db.Column(db.String, nullable=False)
+    age = db.Column(db.Integer, nullable=False)
+    gender_id = db.Column(db.Integer, db.ForeignKey("gender.id"), nullable=False)
     gender = db.relationship('Gender')
-    race_id = db.Column(db.Integer, db.ForeignKey("race.id"))
+    race_id = db.Column(db.Integer, db.ForeignKey("race.id"), nullable=False)
     race = db.relationship('Race')
     fav_color_id = db.Column(db.Integer, db.ForeignKey("fav_color.id"))
     fav_color = db.relationship('FavColor')
@@ -89,9 +89,9 @@ class Child(db.Model):
     shoe_size = db.relationship('ShoeSize')
     clothing_size_id = db.Column(db.Integer, db.ForeignKey("clothing_size.id"))
     clothing_size = db.relationship('ClothingSize')
-    dhs_office_id = db.Column(db.Integer, db.ForeignKey("dhs_office.id"))
+    dhs_office_id = db.Column(db.Integer, db.ForeignKey("dhs_office.id"), nullable=False)
     dhs_office = db.relationship('DhsOffice')
-    dhs_case_worker = db.Column(db.String)
+    dhs_case_worker = db.Column(db.String, nullable=False)
     pulaski_foster_child = db.Column(db.Boolean, default=True)
     parent_id = db.Column(db.Integer, db.ForeignKey("parent.id"))
     parent = db.relationship('Parent', back_populates='children')
@@ -100,21 +100,24 @@ class Child(db.Model):
     modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
 
     @validates('first_name', 'last_name', 'dhs_case_worker')
-    def convert_upper(self, key, value):
-        return value.upper()
+    def convert_title(self, key, value):
+        return value.title()
 
     def __repr__(self):
+        return f'{self.last_name.title()}, {self.first_name.title()}'
+
+    def __str__(self):
         return f'{self.last_name.title()}, {self.first_name.title()}'
 
 
 class Parent(db.Model):
     __tablename__ = "parent"
     id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String)
-    last_name = db.Column(db.String)
-    phone = db.Column(PhoneNumberType())
-    email = db.Column(db.String)
-    children = db.relationship('Child', back_populates='parent', uselist=True, cascade="all, delete-orphan")
+    first_name = db.Column(db.String, nullable=False)
+    last_name = db.Column(db.String, nullable=False)
+    phone = db.Column(PhoneNumberType(), nullable=False)
+    email = db.Column(db.String, nullable=False)
+    children = db.relationship('Child', back_populates='parent', uselist=True)
     create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
     __table_args__ = (
@@ -122,14 +125,17 @@ class Parent(db.Model):
     )
 
     @validates('first_name', 'last_name')
-    def convert_upper(self, key, value):
-        return value.upper()
+    def convert_title(self, key, value):
+        return value.title()
 
     @validates('email')
     def convert_lower(self, key, value):
         return value.lower()
 
     def __repr__(self):
+        return f'{self.last_name.title()}, {self.first_name.title()}'
+
+    def __str__(self):
         return f'{self.last_name.title()}, {self.first_name.title()}'
 
 
@@ -143,8 +149,11 @@ class Gift(db.Model):
     modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
 
     @validates('gift')
-    def convert_upper(self, key, value):
-        return value.upper()
+    def convert_title(self, key, value):
+        return value.title()
 
     def __repr__(self):
+        return f'{self.gift.title()}'
+
+    def __str__(self):
         return f'{self.gift.title()}'

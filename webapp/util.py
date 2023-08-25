@@ -4,6 +4,16 @@ from flask_admin.contrib.sqla.filters import BaseSQLAFilter
 from .models import db, DhsOffice, ShoeSize, ClothingSize, FavColor, Gender, Race
 
 
+def title_case_formatter(view, context, model, name):
+    """
+    `view` is current administrative view
+    `context` is instance of jinja2.runtime.Context
+    `model` is model instance
+    `name` is property name
+    """
+    return getattr(model, name, '').title()
+
+
 def get_dhs_office_options():
     if not has_request_context():
         return ()
