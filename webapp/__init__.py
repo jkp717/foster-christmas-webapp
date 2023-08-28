@@ -30,11 +30,13 @@ def setup_flask_admin(app_instance, session):
     admin.add_view(vw.ParentView(mdl.Parent, session, name='Parents'))
     admin.add_view(vw.ChildView(mdl.Child, session, name='Children'))
     admin.add_view(vw.GiftView(mdl.Gift, session, name='Gifts'))
+    admin.add_view(vw.SponsorView(mdl.Sponsor, session, name='Sponsor'))
     admin.add_view(vw.MiscView(mdl.ShoeSize, session, name='Shoe Sizes', category='Form Options'))
     admin.add_view(vw.MiscView(mdl.ClothingSize, session, name='Clothing Sizes', category='Form Options'))
     admin.add_view(vw.MiscView(mdl.Race, session, name='Ethnicity', category='Form Options'))
     admin.add_view(vw.MiscView(mdl.Gender, session, name='Gender', category='Form Options'))
     admin.add_view(vw.MiscView(mdl.DhsOffice, session, name='DHS Office', category='Form Options'))
+    admin.add_view(vw.MiscView(mdl.Church, session, name='Church', category='Form Options'))
 
     return app_instance
 

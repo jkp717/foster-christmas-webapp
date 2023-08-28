@@ -1,7 +1,19 @@
-from flask import current_app, has_request_context
+from flask import current_app, has_request_context, Markup, url_for
 from flask_admin.contrib.sqla.filters import BaseSQLAFilter
 
-from .models import db, DhsOffice, ShoeSize, ClothingSize, FavColor, Gender, Race
+from .models import db, DhsOffice, ShoeSize, ClothingSize, FavColor, Gender, Race, Church
+
+
+def gift_list_formatter(view, context, model, name):  # noqa
+    cnt = len(model.gifts)
+    filter_txt = 'flt0_child_id_equals'
+    if cnt > 0:
+        return Markup(
+            f"""<a class="list-model-link" href='{url_for("gift.index_view")}?{filter_txt}={model.id}'>{cnt}</a>"""
+        )
+
+def gift_list_export_formatter(view, context, model, name):  # noqa
+    return getattr(model, name)
 
 
 def title_case_formatter(view, context, model, name):
@@ -19,6 +31,11 @@ def get_dhs_office_options():
         return ()
     return tuple([(o.office, o.office) for o in db.session.query(DhsOffice).all()])
 
+
+def get_church_options():
+    if not has_request_context():
+        return ()
+    return tuple([(o.church, o.church) for o in db.session.query(Church).all()])
 
 def get_shoe_size_options():
     if not has_request_context():

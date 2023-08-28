@@ -2,6 +2,28 @@
 # Webapp Configurations
 #
 
+# disclaimers
+GIFT_DELIVERY_DISCLAIMER = """
+    Pickup will be fridays and saturdays at That Church in Sherwood.
+"""
+
+REGISTER_CHILD_DISCLAIMER = """
+    <b>PLEASE READ!</b> Thank you so much for making a difference in a child’s life!
+    This Christmas we are striving to make every child’s wish list come true!
+    Donors and sponsors will choose wish lists to fulfill. Kindly consider that these
+    wish lists are meant for donations, and it might pose a challenge to secure sponsors for highly costly lists.
+    Please refrain from including electronics exceeding a value of $200.
+"""
+
+SPONSORSHIP_DISCLAIMER = """
+    <b>We appreciate your sponsorship of a child!</b>
+    Kindly provide us with your complete information so that we can get in touch regarding drop-off details.
+"""
+
+SPONSOR_CHILD_DISCLAIMER = """
+    Please find your sponsored child(ren) by searching their name (last, first) or ID below
+"""
+
 # database defaults
 db_defaults = {
     'race': {

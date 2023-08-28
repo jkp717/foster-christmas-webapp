@@ -9,7 +9,7 @@ class Config:
     # SECRET_KEY = os.environ.get('SECRET_KEY')
     SECRET_KEY = 'insecure'
     # SECRET_KEY_SALT = base64.b64decode(bytes(os.environ.get('SECRET_KEY_SALT'), "utf-8"))
-    # FLASK_ADMIN_FLUID_LAYOUT = True
+    FLASK_ADMIN_FLUID_LAYOUT = True
     SQLITE_DATABASE_PATH = os.path.join(basedir, 'instance', 'webapp.db')
     SQLALCHEMY_DATABASE_URI = f"sqlite:///{SQLITE_DATABASE_PATH}"
     REGISTER_CHILD_DISCLAIMER = """

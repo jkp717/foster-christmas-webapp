@@ -7,11 +7,13 @@ from flask_admin.contrib.sqla import ModelView
 from flask_admin.babel import gettext
 from flask_admin.form import rules, FormOpts
 from wtforms_alchemy import PhoneNumberField
-from flask_admin.contrib.sqla.filters import FilterLike, FilterEqual
+from flask_admin.contrib.sqla.filters import FilterLike, FilterEqual, IntEqualFilter
 
-from .models import db, Gift, Child, Parent, DhsOffice, Gender, Race, ShoeSize, ClothingSize, FavColor
-from .util import get_race_options, get_gender_options, get_fav_color_options, get_shoe_size_options, \
-    get_dhs_office_options, get_clothing_size_options, title_case_formatter
+from webapp.models import db, Gift, Child, Parent, DhsOffice, Gender, Race, ShoeSize, ClothingSize, FavColor, \
+    Church, Sponsor
+import webapp.util as util
+from webapp.config import GIFT_DELIVERY_DISCLAIMER, REGISTER_CHILD_DISCLAIMER, SPONSORSHIP_DISCLAIMER, \
+    SPONSOR_CHILD_DISCLAIMER
 
 
 class IndexView(AdminIndexView):
@@ -67,8 +69,8 @@ class RegisterView(BaseView):
                 model = model_view.create_model(form)
                 if self._raised_integrity_error:
                     model = db.session.query(Parent).filter(
-                        Parent.first_name == form.first_name.data.upper(),
-                        Parent.last_name == form.last_name.data.upper(),
+                        Parent.first_name == form.first_name.data.title(),
+                        Parent.last_name == form.last_name.data.title(),
                         Parent.email == form.email.data.lower(),
                     ).first()
                 if model:
@@ -132,7 +134,7 @@ class RegisterView(BaseView):
                     if '_add_another' in request.form:
                         return redirect(self.get_url('register.child', parent_id=parent_id))
                     return redirect('/')
-        flash(Markup(Markup(current_app.config['REGISTER_CHILD_DISCLAIMER'])))
+        flash(Markup(Markup(REGISTER_CHILD_DISCLAIMER)))
         return self.render(
             'main/register.html',
             form=form,
@@ -141,6 +143,52 @@ class RegisterView(BaseView):
             return_url='/',
             add_another=True,
             parent=parent
+        )
+
+    @expose('/sponsor', methods=['GET', 'POST'])
+    def sponsor(self):
+        model_view = SponsorView(Sponsor, db.session)
+        return_url = '/'
+        id = get_mdict_item_or_list(request.args, 'id')
+        if id is not None:
+            model = model_view.get_one(id)
+            if model is None:
+                flash(gettext('Sponsor record does not exist.'), 'error')
+                return redirect(return_url)
+            form = model_view.edit_form(obj=model)
+            form_opts = FormOpts(
+                widget_args=model_view.form_widget_args,
+                form_rules=model_view._form_edit_rules  # noqa
+            )
+            if not hasattr(form, '_validated_ruleset') or not form._validated_ruleset:  # noqa
+                model_view._validate_form_instance(ruleset=model_view._form_edit_rules, form=form)  # noqa
+            if model_view.validate_form(form):
+                if model_view.update_model(form, model):
+                    flash(gettext('Thank you for your sponsorship!'), 'success')
+                    return redirect('/')
+            if request.method == 'GET' or form.errors:
+                model_view.on_form_prefill(form, id)
+        else:
+            form = model_view.create_form()
+            form_opts = FormOpts(
+                widget_args=model_view.form_widget_args,
+                form_rules=model_view._form_create_rules  # noqa
+            )
+            if model_view.validate_form(form):
+                model_view.handle_view_exception = self.handle_integrity_error
+                model = model_view.create_model(form)
+                if model:
+                    flash(gettext('Thank you for your sponsorship!'), 'success')
+                    return redirect('/')
+                else:
+                    if request.method == 'GET' or form.errors:
+                        model_view.on_form_prefill(form, id)
+        flash(Markup(Markup(SPONSORSHIP_DISCLAIMER)))
+        return self.render(
+            'main/sponsor.html',
+            form=form,
+            form_opts=form_opts,
+            return_url='/',
         )
 
     def is_visible(self):
@@ -163,35 +211,55 @@ class BaseView(ModelView):
 
 class ChildView(BaseView):
     column_list = [
-        'parent', 'first_name', 'last_name', 'dhs_case_worker', 'dhs_office', 'age', 'race', 'gender', 'fav_color',
-        'shoe_size', 'clothing_size', 'gifts'
+        'id', 'parent', 'first_name', 'last_name', 'dhs_office', 'age', 'dhs_case_worker',
+        'race', 'gender', 'fav_color', 'shoe_size', 'clothing_size', 'gifts', 'church', 'note'
+    ]
+    column_editable_list = ['church', 'note']
+    column_sortable_list = [
+        ('parent', 'parent.last_name'), 'first_name', 'last_name', 'dhs_case_worker',
+        ('dhs_office', 'dhs_office.office'), 'age', ('race', 'race.race'), ('gender', 'gender.gender'),
+        ('fav_color', 'fav_color.color'), ('shoe_size', 'shoe_size.size'), ('clothing_size', 'clothing_size.size'),
+        ('church', 'church.church')
     ]
     column_filters = [
+        'id',
         'age',
         FilterLike(Parent.last_name, 'Parent Last Name'),
         FilterLike(Parent.first_name, 'Parent First Name'),
         FilterLike('dhs_case_worker', 'Case Worker'),
         FilterLike('first_name', 'Child First Name'),
         FilterLike('last_name', 'Child Last Name'),
-        FilterEqual(DhsOffice.office, 'DHS Office', options=get_dhs_office_options),
-        FilterEqual(Race.race, 'Child Race', options=get_race_options),
-        FilterEqual(Gender.gender, 'Child Gender', options=get_gender_options),
-        FilterEqual(ShoeSize.size, 'Shoe Size', options=get_shoe_size_options),
-        FilterEqual(ClothingSize.size, 'Clothing Size', options=get_clothing_size_options),
-        FilterEqual(FavColor.color, 'Favorite Color', options=get_fav_color_options)
+        FilterEqual(DhsOffice.office, 'DHS Office', options=util.get_dhs_office_options),
+        FilterEqual(Race.race, 'Child Race', options=util.get_race_options),
+        FilterEqual(Gender.gender, 'Child Gender', options=util.get_gender_options),
+        FilterEqual(ShoeSize.size, 'Shoe Size', options=util.get_shoe_size_options),
+        FilterEqual(ClothingSize.size, 'Clothing Size', options=util.get_clothing_size_options),
+        FilterEqual(FavColor.color, 'Favorite Color', options=util.get_fav_color_options),
+        FilterEqual(Church.church, 'Assigned Church', options=util.get_church_options)
     ]
     column_searchable_list = [Gift.gift]
     form_rules = [
         rules.NestedRule([rules.Header('Foster Parent'), 'parent', rules.Macro('render_child_list')]),
-        rules.NestedRule([rules.Header('Add Foster Child'), *column_list[1:]])
+        rules.NestedRule(
+            [rules.Header('Add Foster Child'), 'first_name', 'last_name', 'dhs_case_worker',
+             'dhs_office', 'age', 'race', 'gender', 'fav_color', 'shoe_size', 'clothing_size',
+             'gifts']
+        )
     ]
     form_columns = column_list
     inline_models = [(Gift, dict(form_columns=['id', 'gift']))]
     column_labels = {
         'dhs_case_worker': 'Case Worker',
         'dhs_office': 'DHS Office',
-        'fav_color': 'Favorite Color',
-        'parent': 'Foster Parent'
+        'fav_color': 'Fav. Color',
+        'parent': 'Foster Parent',
+        'note': 'Notes'
+    }
+    column_formatters = {
+        'gifts': util.gift_list_formatter
+    }
+    column_formatters_export = {
+        'gifts': util.gift_list_export_formatter
     }
 
     @expose('/')
@@ -201,9 +269,19 @@ class ChildView(BaseView):
 
 
 class ParentView(BaseView):
-    form_columns = ['first_name', 'last_name', 'phone', 'email']
+    form_columns = ['first_name', 'last_name', 'phone', 'email', 'gift_delivery']
     form_rules = {
-        rules.FieldSet(rules=form_columns, header='Foster Parent')
+        rules.NestedRule([
+            rules.NestedRule(
+                [rules.Header('Foster Parent'), 'first_name', 'last_name', 'phone', 'email']
+            ),
+            rules.NestedRule(
+                [rules.HTML(f"""<div class="form-text-disclaimer">{GIFT_DELIVERY_DISCLAIMER}</div>"""), 'gift_delivery']
+            )
+        ])
+    }
+    column_labels = {
+        'gift_delivery': 'DHS Delivery'
     }
     form_overrides = {
         'phone': PhoneNumberField,
@@ -211,7 +289,29 @@ class ParentView(BaseView):
 
 
 class GiftView(BaseView):
-    pass
+    column_display_pk = True
+    column_filters = ['child_id', 'child']
+    column_searchable_list = ['gift']
+    column_sortable_list = {('child', 'child.last_name'), 'gift'}
+    column_list = ('id', 'child', 'gift')
+
+
+class SponsorView(BaseView):
+    form_columns = ['first_name', 'last_name', 'phone', 'email', 'children']
+    form_overrides = {
+        'phone': PhoneNumberField,
+    }
+    form_rules = {
+        rules.NestedRule([
+            rules.NestedRule(
+                [rules.Header('Sponsor Info'), 'first_name', 'last_name', 'phone', 'email']
+            ),
+            rules.NestedRule(
+                [rules.HTML(f"""<div class="form-text-disclaimer">{SPONSOR_CHILD_DISCLAIMER}</div>"""),
+                 'children']
+            )
+        ])
+    }
 
 
 class MiscView(BaseView):

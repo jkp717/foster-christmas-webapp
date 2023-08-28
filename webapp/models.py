@@ -73,6 +73,17 @@ class DhsOffice(db.Model):
         return f'{self.office}'
 
 
+class Church(db.Model):
+    __tablename__ = "church"
+    id = db.Column(db.Integer, primary_key=True)
+    church = db.Column(db.String, nullable=False, unique=True)
+    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+
+    def __repr__(self):
+        return f'{self.church}'
+
+
 class Child(db.Model):
     __tablename__ = "child"
     id = db.Column(db.Integer, primary_key=True)
@@ -95,7 +106,12 @@ class Child(db.Model):
     pulaski_foster_child = db.Column(db.Boolean, default=True)
     parent_id = db.Column(db.Integer, db.ForeignKey("parent.id"))
     parent = db.relationship('Parent', back_populates='children')
+    church_id = db.Column(db.Integer, db.ForeignKey("church.id"))
+    church = db.relationship('Church')
+    sponsor_id = db.Column(db.Integer, db.ForeignKey("sponsor.id"))
+    sponsor = db.relationship('Sponsor', back_populates='children')
     gifts = db.relationship('Gift', back_populates='child', uselist=True, cascade="all, delete-orphan")
+    note = db.Column(db.Text)
     create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
 
@@ -104,10 +120,10 @@ class Child(db.Model):
         return value.title()
 
     def __repr__(self):
-        return f'{self.last_name.title()}, {self.first_name.title()}'
+        return f'{self.last_name.title()}, {self.first_name.title()} ({self.id})'
 
     def __str__(self):
-        return f'{self.last_name.title()}, {self.first_name.title()}'
+        return f'{self.last_name.title()}, {self.first_name.title()} ({self.id})'
 
 
 class Parent(db.Model):
@@ -118,6 +134,7 @@ class Parent(db.Model):
     phone = db.Column(PhoneNumberType(), nullable=False)
     email = db.Column(db.String, nullable=False)
     children = db.relationship('Child', back_populates='parent', uselist=True)
+    gift_delivery = db.Column(db.Boolean, default=False)
     create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
     __table_args__ = (
@@ -157,3 +174,18 @@ class Gift(db.Model):
 
     def __str__(self):
         return f'{self.gift.title()}'
+
+
+class Sponsor(db.Model):
+    __tablename__ = "sponsor"
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String, nullable=False)
+    last_name = db.Column(db.String, nullable=False)
+    phone = db.Column(PhoneNumberType(), nullable=False)
+    email = db.Column(db.String, nullable=False)
+    children = db.relationship('Child', back_populates='sponsor', uselist=True)
+    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+    __table_args__ = (
+        db.UniqueConstraint('first_name', 'last_name', 'email', name='_sponsor_uc'),
+    )
