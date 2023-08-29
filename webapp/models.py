@@ -2,7 +2,7 @@ import datetime
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_utils import PhoneNumberType
 from sqlalchemy.orm import validates
-
+from sqlalchemy.ext.hybrid import hybrid_property
 
 db = SQLAlchemy()
 
@@ -118,6 +118,10 @@ class Child(db.Model):
     @validates('first_name', 'last_name', 'dhs_case_worker')
     def convert_title(self, key, value):
         return value.title()
+
+    @hybrid_property
+    def has_sponsor(self):
+        return self.sponsor_id is not None
 
     def __repr__(self):
         return f'{self.last_name.title()}, {self.first_name.title()} ({self.id})'

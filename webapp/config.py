@@ -4,7 +4,8 @@
 
 # disclaimers
 GIFT_DELIVERY_DISCLAIMER = """
-    Pickup will be fridays and saturdays at That Church in Sherwood.
+    Pickup will be Fridays and Saturdays at That Church in Sherwood. If you are unable to make this work,
+    DHS will be able to deliver to your location.
 """
 
 REGISTER_CHILD_DISCLAIMER = """

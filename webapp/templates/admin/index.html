@@ -1,0 +1,31 @@
+{% extends 'admin/base.html' %}
+
+{% block body %}
+<div class="container">
+  <h3>Download Reports</h3>
+  <div class="list-group">
+    <a href="{{ get_url('gift.export', export_type='csv') }}" class="list-group-item list-group-item-action flex-column align-items-start">
+      <div class="d-flex w-100 justify-content-between">
+        <h5 class="mb-1">All Gifts (.csv)</h5>
+      </div>
+      <p class="mb-1">Download a report of all gifts. Includes information on gift and child. </p>
+      <small>Click to download</small>
+    </a>
+    <a href="{{ get_url('child.export', export_type='csv', flt1_sponsored_equals=0) }}" class="list-group-item list-group-item-action flex-column align-items-start">
+      <div class="d-flex w-100 justify-content-between">
+        <h5 class="mb-1">All Unsponsored Children (.csv)</h5>
+      </div>
+      <p class="mb-1">Download a report of all children that have NOT received a sponsor. Includes information on child,
+        gift(s), and foster parent. </p>
+      <small class="text-muted">Click to download</small>
+    </a>
+    <a href="{{ get_url('child.export', export_type='csv') }}" class="list-group-item list-group-item-action flex-column align-items-start">
+      <div class="d-flex w-100 justify-content-between">
+        <h5 class="mb-1">All Children (.csv)</h5>
+      </div>
+      <p class="mb-1">Download a report of all children. Includes information on child, sponsor, and foster parent.</p>
+      <small class="text-muted">Click to download</small>
+    </a>
+  </div>
+  </div>
+{% endblock %}

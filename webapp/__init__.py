@@ -14,7 +14,8 @@ def setup_flask_admin(app_instance, session):
         name='Admin',
         template_mode='bootstrap4',
         endpoint='/admin',
-        url='/admin'
+        url='/admin',
+        index_view=vw.AdminReportsView(name='Reports', endpoint='/admin', url='/admin')
     )
 
     base = Admin(

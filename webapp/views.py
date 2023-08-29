@@ -1,13 +1,17 @@
+import os
+import csv
+import sqlite3
+from io import BytesIO
 from sqlalchemy.exc import IntegrityError
 
-from flask import flash, request, redirect, Markup, current_app
+from flask import flash, request, redirect, Markup, send_file, current_app
 from flask_admin import expose, BaseView, AdminIndexView
 from flask_admin.model.helpers import get_mdict_item_or_list
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.babel import gettext
 from flask_admin.form import rules, FormOpts
 from wtforms_alchemy import PhoneNumberField
-from flask_admin.contrib.sqla.filters import FilterLike, FilterEqual, IntEqualFilter
+from flask_admin.contrib.sqla.filters import FilterLike, FilterEqual, BooleanEqualFilter
 
 from webapp.models import db, Gift, Child, Parent, DhsOffice, Gender, Race, ShoeSize, ClothingSize, FavColor, \
     Church, Sponsor
@@ -130,9 +134,10 @@ class RegisterView(BaseView):
             if model_view.validate_form(form):
                 model = model_view.create_model(form)
                 if model:
-                    flash(gettext('Our records have been updated! Add another child or click finish.'), 'success')
                     if '_add_another' in request.form:
+                        flash(gettext('Our records have been updated! Add another child or click finish.'), 'success')
                         return redirect(self.get_url('register.child', parent_id=parent_id))
+                    flash("Your children have been registered! Thank you!")
                     return redirect('/')
         flash(Markup(Markup(REGISTER_CHILD_DISCLAIMER)))
         return self.render(
@@ -195,6 +200,20 @@ class RegisterView(BaseView):
         return False
 
 
+class AdminReportsView(AdminIndexView):
+
+    @expose('/')
+    def index(self):
+        return self.render(
+            'admin/index.html',
+        )
+
+    @expose('/download/<report_name>')
+    def download(self, report_name):
+        if report_name.upper() == 'ALL_SPONSORED':
+            return redirect(self.get_url('admin.child', flt1_sponsored_equals=1))
+
+
 class BaseView(ModelView):
     form_excluded_columns = ['create_date', 'modify_date']
     column_exclude_list = form_excluded_columns
@@ -211,19 +230,28 @@ class BaseView(ModelView):
 
 class ChildView(BaseView):
     column_list = [
-        'id', 'parent', 'first_name', 'last_name', 'dhs_office', 'age', 'dhs_case_worker',
-        'race', 'gender', 'fav_color', 'shoe_size', 'clothing_size', 'gifts', 'church', 'note'
+        'id', 'parent', 'first_name', 'last_name', 'dhs_office', 'age', 'dhs_case_worker', 'gender',
+        'has_sponsor', 'gifts', 'church', 'note'
+    ]
+    form_exclude_columns = [
+        'id', 'church', 'note', 'has_sponsor'
     ]
     column_editable_list = ['church', 'note']
+    column_descriptions = {
+        "church": "Church given child's gift registration (if applicable)",
+        "has_sponsor": "If a sponsor has been assigned to this child",
+        "gifts": "Count of gifts registered (click link to see gifts)"
+    }
     column_sortable_list = [
         ('parent', 'parent.last_name'), 'first_name', 'last_name', 'dhs_case_worker',
         ('dhs_office', 'dhs_office.office'), 'age', ('race', 'race.race'), ('gender', 'gender.gender'),
         ('fav_color', 'fav_color.color'), ('shoe_size', 'shoe_size.size'), ('clothing_size', 'clothing_size.size'),
-        ('church', 'church.church')
+        ('church', 'church.church'), 'has_sponsor'
     ]
     column_filters = [
         'id',
         'age',
+        BooleanEqualFilter('has_sponsor', 'Sponsored'),
         FilterLike(Parent.last_name, 'Parent Last Name'),
         FilterLike(Parent.first_name, 'Parent First Name'),
         FilterLike('dhs_case_worker', 'Case Worker'),
@@ -246,14 +274,14 @@ class ChildView(BaseView):
              'gifts']
         )
     ]
-    form_columns = column_list
     inline_models = [(Gift, dict(form_columns=['id', 'gift']))]
     column_labels = {
         'dhs_case_worker': 'Case Worker',
         'dhs_office': 'DHS Office',
         'fav_color': 'Fav. Color',
         'parent': 'Foster Parent',
-        'note': 'Notes'
+        'note': 'Notes',
+        'has_sponsor': 'Sponsored'
     }
     column_formatters = {
         'gifts': util.gift_list_formatter
@@ -276,7 +304,8 @@ class ParentView(BaseView):
                 [rules.Header('Foster Parent'), 'first_name', 'last_name', 'phone', 'email']
             ),
             rules.NestedRule(
-                [rules.HTML(f"""<div class="form-text-disclaimer">{GIFT_DELIVERY_DISCLAIMER}</div>"""), 'gift_delivery']
+                [rules.HTML(f"""<small class="form-text text-muted">{GIFT_DELIVERY_DISCLAIMER}</small>"""),
+                 'gift_delivery']
             )
         ])
     }
@@ -294,6 +323,19 @@ class GiftView(BaseView):
     column_searchable_list = ['gift']
     column_sortable_list = {('child', 'child.last_name'), 'gift'}
     column_list = ('id', 'child', 'gift')
+    column_export_list = [
+        'child_id', 'child.last_name', 'child.first_name', 'child.age', 'child.gender', 'gift', 'child.sponsor'
+    ]
+    column_labels = {
+        'child.last_name': 'Child Last',
+        'child.first_name': 'Child First',
+        'child.age': 'Age',
+        'child.fav_color': 'Fav Color',
+        'child.shoe_size': 'Shoe Size',
+        'child.clothing_size': 'Clothing Size',
+        'child.gender': 'Gender',
+        'child.sponsor': 'Sponsor',
+    }
 
 
 class SponsorView(BaseView):
@@ -307,7 +349,7 @@ class SponsorView(BaseView):
                 [rules.Header('Sponsor Info'), 'first_name', 'last_name', 'phone', 'email']
             ),
             rules.NestedRule(
-                [rules.HTML(f"""<div class="form-text-disclaimer">{SPONSOR_CHILD_DISCLAIMER}</div>"""),
+                [rules.HTML(f"""<small class="form-text text-muted">{SPONSOR_CHILD_DISCLAIMER}</small>"""),
                  'children']
             )
         ])
@@ -316,3 +358,5 @@ class SponsorView(BaseView):
 
 class MiscView(BaseView):
     column_display_pk = True
+
+
