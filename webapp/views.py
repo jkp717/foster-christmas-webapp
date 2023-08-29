@@ -1,11 +1,9 @@
-import os
-import csv
-import sqlite3
-from io import BytesIO
 from sqlalchemy.exc import IntegrityError
 
-from flask import flash, request, redirect, Markup, send_file, current_app
+from flask import flash, request, redirect, Markup
 from flask_admin import expose, BaseView, AdminIndexView
+from flask_admin.actions import action
+from flask_admin.babel import ngettext
 from flask_admin.model.helpers import get_mdict_item_or_list
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.babel import gettext
@@ -215,6 +213,7 @@ class AdminReportsView(AdminIndexView):
 
 
 class BaseView(ModelView):
+    column_type_formatters = util.DEFAULT_FORMATTERS
     form_excluded_columns = ['create_date', 'modify_date']
     column_exclude_list = form_excluded_columns
     # column_type_formatters = utils.get_config_formatters()
@@ -319,12 +318,13 @@ class ParentView(BaseView):
 
 class GiftView(BaseView):
     column_display_pk = True
-    column_filters = ['child_id', 'child']
+    column_filters = ['child_id', 'child', 'create_date', 'received']
     column_searchable_list = ['gift']
-    column_sortable_list = {('child', 'child.last_name'), 'gift'}
-    column_list = ('id', 'child', 'gift')
+    column_sortable_list = {('child', 'child.last_name'), 'create_date', 'gift', 'received'}
+    column_list = ('id', 'gift.create_date', 'child', 'received', 'gift')
     column_export_list = [
-        'child_id', 'child.last_name', 'child.first_name', 'child.age', 'child.gender', 'gift', 'child.sponsor'
+        'child_id', 'child.last_name', 'child.first_name', 'child.age', 'child.gender', 'gift', 'child.sponsor',
+        'received', 'create_date'
     ]
     column_labels = {
         'child.last_name': 'Child Last',
@@ -335,11 +335,31 @@ class GiftView(BaseView):
         'child.clothing_size': 'Clothing Size',
         'child.gender': 'Gender',
         'child.sponsor': 'Sponsor',
+        'create_date': 'Registered Date'
     }
+
+    @action('receive_gift', 'Mark as Received', 'Marking all selected gifts as received. Continue?')
+    def receive_gift(self, ids):
+        try:
+            query = db.session.query(Gift).filter(Gift.id.in_(ids))
+            count = 0
+            for gift in query.all():
+                gift.received = True
+                count += 1
+            db.session.commit()
+            flash(ngettext('Gift was marked as received.',
+                           '%(count)s gifts were marked as received.',
+                           count, count=count))
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                raise
+            flash(gettext('Failed to update received status on gifts. %(error)s', error=str(ex)), 'error')
 
 
 class SponsorView(BaseView):
-    form_columns = ['first_name', 'last_name', 'phone', 'email', 'children']
+    form_columns = ['first_name', 'last_name', 'phone', 'email']
+    column_select_related_list = (Sponsor.children,)
+    column_formatters = {'children': util.sponsor_children_formatter}
     form_overrides = {
         'phone': PhoneNumberField,
     }

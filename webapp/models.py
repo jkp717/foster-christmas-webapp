@@ -166,6 +166,7 @@ class Gift(db.Model):
     child_id = db.Column(db.Integer, db.ForeignKey("child.id"))
     child = db.relationship('Child', back_populates='gifts')
     gift = db.Column(db.String, nullable=False)
+    received = db.Column(db.Boolean, default=False)
     create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
 
