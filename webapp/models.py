@@ -124,10 +124,10 @@ class Child(db.Model):
         return self.sponsor_id is not None
 
     def __repr__(self):
-        return f'{self.last_name.title()}, {self.first_name.title()} ({self.id})'
+        return f'{self.first_name.title()} (ID: {self.id})'
 
     def __str__(self):
-        return f'{self.last_name.title()}, {self.first_name.title()} ({self.id})'
+        return f'{self.first_name.title()} (ID: {self.id})'
 
 
 class Parent(db.Model):

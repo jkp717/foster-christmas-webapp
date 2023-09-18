@@ -4,7 +4,7 @@
     <div class="row">
       <div class="col">
         <div class="jumbotron">
-          <h1 class="display-title">Child Registration</h1>
+          <h1 class="display-title">Register Foster Child</h1>
           <p class="lead">
             Please click below to register a Pulaski County foster child for Christmas
           </p>
@@ -16,13 +16,61 @@
     <div class="row">
       <div class="col">
         <div class="jumbotron">
-          <h1 class="display-title">Be a Sponsor</h1>
+          <h1 class="display-title">Already chosen a wishlist?</h1>
           <p class="lead">
           </p>
           <hr class="my-4">
-          <p>Please click below to sponsor a child for Christmas</p>
+          <p>Click below to register a wishlist</p>
           <a class="btn btn-holiday-red btn-lg" href="{{ get_url('register.sponsor') }}" role="button">Sponsor</a>
         </div>
       </div>
     </div>
+
+{% endblock %}
+
+{% block footer %}
+<footer class="page-footer font-small pt-4">
+  <div class="container-fluid text-center text-md-left">
+    <div class="row">
+      <div class="col-md-6 mt-md-0 mt-3">
+        <h5 class="text-uppercase">Contact</h5>
+        <p>If your church, family or business would like to sponsor a child or host a toy drive,
+          Please call Lillie Price at lillie@that.church</p>
+      </div>
+      <hr class="clearfix w-100 d-md-none pb-3">
+      <div class="col-md-3 mb-md-0 mb-3">
+        <h5 class="text-uppercase">Links</h5>
+        <ul class="list-unstyled">
+          <li>
+            <a class="footer-link" href="{{ get_url('register.parent') }}">Child Registration</a>
+          </li>
+          <li>
+            <a class="footer-link" href="get_url('register.sponsor')">Sponsor a Child</a>
+          </li>
+          <li>
+            <a class="footer-link" href="#!">Donate</a>
+          </li>
+        </ul>
+      </div>
+      <div class="col-md-3 mb-md-0 mb-3">
+        <h5 class="text-uppercase">Links</h5>
+        <ul class="list-unstyled">
+          <li>
+            <a class="footer-link" href="#!">Pulaski County DHS</a>
+          </li>
+          <li>
+            <a class="footer-link"  href="#!">That.Church</a>
+          </li>
+          <li>
+            <a class="footer-link" href="#!">The Call</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer-copyright text-center py-3"> Questions? Email
+    <a classs="footer-link" href="mailto: lillie@that.church"> lillie@that.church</a>
+  </div>
+</footer>
+<!-- Footer -->
 {% endblock %}

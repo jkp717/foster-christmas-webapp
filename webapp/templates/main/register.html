@@ -4,6 +4,12 @@
 
 {% set render_ctx = h.resolve_ctx() %}
 
+{% macro form_helper_text(msg) %}
+    <div>
+        <strong style="color: red">*</strong><span class="form-helper-text">{{ msg }}</span>
+    </div>
+{% endmacro %}
+
 {% macro render_child_list() %}
 {% if parent.children is not none %}
     {% if parent.children|count > 0 %}

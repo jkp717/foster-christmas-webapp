@@ -239,7 +239,8 @@ class ChildView(BaseView):
     column_descriptions = {
         "church": "Church given child's gift registration (if applicable)",
         "has_sponsor": "If a sponsor has been assigned to this child",
-        "gifts": "Count of gifts registered (click link to see gifts)"
+        "gifts": "Count of gifts registered (click link to see gifts)",
+        
     }
     column_sortable_list = [
         ('parent', 'parent.last_name'), 'first_name', 'last_name', 'dhs_case_worker',
@@ -267,11 +268,15 @@ class ChildView(BaseView):
     column_searchable_list = [Gift.gift]
     form_rules = [
         rules.NestedRule([rules.Header('Foster Parent'), 'parent', rules.Macro('render_child_list')]),
-        rules.NestedRule(
-            [rules.Header('Add Foster Child'), 'first_name', 'last_name', 'dhs_case_worker',
-             'dhs_office', 'age', 'race', 'gender', 'fav_color', 'shoe_size', 'clothing_size',
-             'gifts']
-        )
+        rules.NestedRule([
+            rules.Header('Add Foster Child'), 'first_name', 'last_name', 'dhs_case_worker',
+            'dhs_office', 'age', 'race', 'gender', 'fav_color', 'shoe_size', 'clothing_size'
+        ]),
+        rules.NestedRule([
+            'gifts',
+            rules.Macro('form_helper_text', msg="Please limit to 5 gifts per child"),
+            rules.Macro('form_helper_text', msg="Please refrain from including electronics exceeding a value of $200."),
+        ])
     ]
     inline_models = [(Gift, dict(form_columns=['id', 'gift']))]
     column_labels = {
@@ -357,8 +362,7 @@ class GiftView(BaseView):
 
 
 class SponsorView(BaseView):
-    form_columns = ['first_name', 'last_name', 'phone', 'email']
-    column_select_related_list = (Sponsor.children,)
+    form_columns = ['first_name', 'last_name', 'phone', 'email', 'children']
     column_formatters = {'children': util.sponsor_children_formatter}
     form_overrides = {
         'phone': PhoneNumberField,

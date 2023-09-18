@@ -8,6 +8,7 @@ body {
     align-items: center;
     -ms-flex-pack: justify;
     justify-content: center;
+    background-color: rgb(91, 136, 65);
 }
 
 .navbar-light .navbar-text {
@@ -64,4 +65,30 @@ h1.display-title {
 
 .list-group-flush:last-child .list-group-item:last-child {
     border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+.page-footer {
+    /*background-color: #f9f9f9;*/
+    background-color: rgba(79, 127, 51, 80%);
+    color: white;
+    box-shadow: 0 -3px 6px rgba(0,0,0,0.16), 0 -3px 6px rgba(0,0,0,0.23);
+}
+
+.page-footer .footer-link {
+    color: white;
+}
+
+.page-footer .footer-link:hover {
+    color: white;
+}
+
+.footer-copyright {
+    background-color: rgba(79, 127, 51, 65%);
+    color: white;
+}
+
+.form-helper-text {
+    font-size: .8rem;
+    font-style: italic;
+    font-weight: 600;
 }
