@@ -5,17 +5,41 @@ body {
 .navbar {
     padding: 0;
     box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+/*
     align-items: center;
     -ms-flex-pack: justify;
     justify-content: center;
+*/
     background-color: rgb(91, 136, 65);
 }
 
-.navbar-light .navbar-text {
-    color: #fff !important;
+.navbar-dark .navbar-text {
+    /*color: #fff !important;*/
     font-variant: small-caps;
     font-weight: 500;
+    padding-top: 0;
+    padding-bottom: 10px;
 }
+
+.navbar-text .float-under-text {
+    position: absolute;
+    top: 28px;
+    font-size: 0.7rem;
+    font-style: italic;
+    font-weight: 400;
+}
+
+
+.navbar-expand-md .navbar-nav .nav-link {
+    padding-right: 3rem;
+    /* padding-left: 0; */
+    /*color: white;*/
+    font-weight: 500;
+    font-variant: all-small-caps;
+    font-size: 1.2rem;
+}
+
+
 
 .navbar-brand > img {
     /*background-color: #bc4749;*/

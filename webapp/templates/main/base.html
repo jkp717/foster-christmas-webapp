@@ -7,11 +7,23 @@
 
 {% block page_body %}
 <div class="">
-  <nav class="navbar navbar-light">
+  <nav class="navbar navbar-dark navbar-expand-md">
     <a class="navbar-brand" href="/">
-      <img src="{{ url_for('static', filename='img/gift-open-white.png') }}" width="50" height="50" alt="">
-      <span class="navbar-text align-middle">Pulaski County Hope for the Holidays</span>
+      <img src="{{ url_for('static', filename='img/the-call-logo.png') }}" height="40" alt="">
+      <div class="navbar-text align-middle">Holiday Hope Tree
+        <div class="float-under-text">Pulaski County, AR</div>
+      </div>
     </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse justify-content-end" id="navbarNavAltMarkup">
+      <div class="navbar-nav">
+        <a class="nav-item nav-link" href="#">Register</a>
+        <a class="nav-item nav-link" href="#">Sponsor</a>
+        <a class="nav-item nav-link" href="#">Donate</a>
+      </div>
+    </div>
   </nav>
   <div class="container index-inner-container">
     {% block messages %}{{ super() }}{% endblock %}
