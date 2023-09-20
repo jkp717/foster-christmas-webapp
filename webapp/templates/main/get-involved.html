@@ -1,0 +1,28 @@
+{% extends 'main/base.html' %}
+{% import 'main/lib.html' as lib with context %}
+{% from 'main/lib.html' import extra with context %} {# backward compatible #}
+
+{% set render_ctx = h.resolve_ctx() %}
+
+{% block head %}
+  {{ super() }}
+  {{ lib.form_css() }}
+{% endblock %}
+
+{% block page_container %}
+<h1 class="display-title">How to get involved</h1>
+<hr class="my-12"/>
+<ul class="list-style-circle">
+  <li class="list-item">The best way to donate monetarily is to send e-gift cards!  This helps us to purchase gifts for kids that come into care right before Christmas.  Walmart, Amazon and Target are great examples.  They are local and we can pick up easily.  Please email E-Gift Cards to lillie@that.church</li>
+  <li class="list-item">We have created an Amazon wish list of popular items!  These will ship directly to the church so its easy for us to  include them in gift packages</li>
+  <li class="list-item">Give monetarily to <a href="https://igfn.us/form/tEmO0w">The CALL</a></li>
+  <li class="list-item">Host a Holiday Hope Tree or sponsor a foster child’s Wishlist by emailing <a href="mailto: lillie@that.church"> lillie@that.church</a></li>
+  <li class="list-item">Host a toy drive</li>
+  <li class="list-item">Volunteer!  We will need so much help the week of this event to receive and sort all gifts.  Please register to volunteer at <a href="/">TBD</a></li>
+</ul>
+{% endblock %}
+
+{% block tail %}
+  {{ super() }}
+  {{ lib.form_js() }}
+{% endblock %}

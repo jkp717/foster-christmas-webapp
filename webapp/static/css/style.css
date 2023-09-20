@@ -1,5 +1,8 @@
 body {
     background-color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .navbar {
@@ -23,12 +26,11 @@ body {
 
 .navbar-text .float-under-text {
     position: absolute;
-    top: 28px;
+    top: 2.7rem;
     font-size: 0.7rem;
     font-style: italic;
     font-weight: 400;
 }
-
 
 .navbar-expand-md .navbar-nav .nav-link {
     padding-right: 3rem;
@@ -38,8 +40,10 @@ body {
     font-variant: all-small-caps;
     font-size: 1.2rem;
 }
-
-
+.navbar-brand {
+    font-size: 2rem;
+    margin-left: 10px;
+}
 
 .navbar-brand > img {
     /*background-color: #bc4749;*/
@@ -48,22 +52,10 @@ body {
     margin: 0px 5px;
 }
 
-.jumbotron {
-    background-color: #5a994e38;
-    color: rgba(0,0,0,0.55) !important;
-}
-
 .btn-holiday-red {
     color: #fff;
     background-color: #bc4749;
     border-color: #bc4749;
-}
-
-h1.display-title {
-    font-size: 3rem;
-    font-weight: 800;
-    font-variant: petite-caps;
-    color: #386641;
 }
 
 .index-inner-container {
@@ -96,6 +88,7 @@ h1.display-title {
     background-color: rgba(79, 127, 51, 80%);
     color: white;
     box-shadow: 0 -3px 6px rgba(0,0,0,0.16), 0 -3px 6px rgba(0,0,0,0.23);
+    margin-top: auto;
 }
 
 .page-footer .footer-link {
@@ -115,4 +108,22 @@ h1.display-title {
     font-size: .8rem;
     font-style: italic;
     font-weight: 600;
+}
+
+h1.display-title {
+    font-size: 3rem;
+    font-weight: 800;
+    font-variant: petite-caps;
+}
+
+.index-container {
+    margin: 30px 0px;
+}
+
+.details-sub-list {
+    margin-left: 20px;
+}
+
+ul.list-style-circle li.list-item {
+    margin-bottom: 13px;
 }

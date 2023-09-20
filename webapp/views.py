@@ -194,6 +194,18 @@ class RegisterView(BaseView):
             return_url='/',
         )
 
+    @expose('/get-involved', methods=['GET'])
+    def get_involved(self):
+        return self.render(
+            'main/get-involved.html',
+        )
+
+    @expose('/details', methods=['GET'])
+    def details(self):
+        return self.render(
+            'main/details.html',
+        )
+
     def is_visible(self):
         return False
 

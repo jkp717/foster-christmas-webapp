@@ -1,0 +1,83 @@
+{% extends 'main/base.html' %}
+{% import 'main/lib.html' as lib with context %}
+{% from 'main/lib.html' import extra with context %} {# backward compatible #}
+
+{% set render_ctx = h.resolve_ctx() %}
+
+{% block head %}
+  {{ super() }}
+  {{ lib.form_css() }}
+{% endblock %}
+
+{% block page_container %}
+<div class="row">
+  <div class="col" style="margin-bottom: 50px;">
+    <h1 class="display-title">Foster Parents</h1>
+    <hr class="my-12"/>
+    <ul class="list-style-circle">
+      <li class="list-item">
+        This website is for children based out of Pulaski County DHS only.  If you live outside of Pulaski but your child is out of a Pulaski County office you will still register here.
+      </li>
+      <li class="list-item">
+        If you live in Pulaski county and have a child from another county please contact your case-worker from that county about how they are handling Christmas, every county is a little different.
+      </li>
+      <li class="list-item">
+        Gift Pick Up will be at That Church in Sherwood (901 E main, Sherwood) Friday, Dec 15 from 9-5pm.
+        If these pickup times do not work for you please make sure to click the box “Will need DHS to deliver” when registering your child so that we can get that arranged for you.
+      </li>
+    </ul>
+    <div class="details-sub-list">
+      <h5>For children based out of the Jacksonville, South or Southwest offices:</h5>
+      <ul class="list-style-circle">
+        <li class="list-item">
+          Deadline for the child’s wish lists is Nov 3rd.
+          After that date the foster child will be given age appropriate gifts or you may have the opportunity to shop donated gifts.
+          Please reach out to Lillie Price at <a href="mailto: lillie@that.church"> lillie@that.church</a> for more info.
+        </li>
+      </ul>
+    </div>
+    <div class="details-sub-list">
+    <h5>For children based out of the North Office:</h5>
+    <ul class="list-style-circle">
+      <li class="list-item">
+        St Luke’s will be covering all gifts for your child.  Please contact them at <a href="#">TBD</a> with any questions.
+      </li>
+    </ul>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col">
+    <h1 class="display-title">Donors</h1>
+    <hr class="my-12"/>
+    <div class="details-sub-list">
+      <h5>You have the choice of 2 drop off locations:</h5>
+      <ul class="list-style-circle">
+        <li class="list-item">
+          <div>The CALL Support Center, 4020 Woodland Heights, Little Rock, AR 72212. </div>
+          <div>Drop off Tuesday-Thursday, Dec 5-7, from 8:30am-3:30 or please call to reserve a time to drop off gifts. </div>
+          <div>Contact Matina Taylor or Judi Booth 501-823-0607 with questions regarding drop-offs at this location.</div>
+        </li>
+        <li class="list-item">
+          <div>That Church Sherwood, 901 E. Kiehl, Sherwood, AR 72120</div>
+          <div>Drop off Sunday, Dec 10, from 2-5pm or Monday, Dec 11, from 8-11am</div>
+          <div>Please contact Lillie Price at <a href="mailto: lillie@that.church">lillie@that.church</a> with any questions regarding drop-offs at this location.</div>
+        </li>
+      </ul>
+    </div>
+    <div class="details-sub-list">
+      <h5>If you chose a list off of a Holiday Hope Tree from our church Partners:</h5>
+      <ul class="list-style-circle">
+        <li class="list-item">
+          If not already, please register <a href="{{ get_url('register.sponsor') }}">here</a>.
+          This is where you can input your information so we have your contact info, this is very helpful to us!
+        </li>
+      </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block tail %}
+  {{ super() }}
+  {{ lib.form_js() }}
+{% endblock %}
