@@ -93,10 +93,25 @@ body {
 
 .page-footer .footer-link {
     color: white;
+    font-size: .9rem;
 }
 
 .page-footer .footer-link:hover {
     color: white;
+}
+
+.page-footer .email-link {
+    color: white;
+    font-weight: 600;
+}
+
+.page-footer .email-link:hover {
+    color: white;
+    font-weight: 600;
+}
+
+.page-footer .footer-header {
+    color: rgba(256,256,256,0.5);
 }
 
 .footer-copyright {
@@ -126,4 +141,10 @@ h1.display-title {
 
 ul.list-style-circle li.list-item {
     margin-bottom: 13px;
+}
+
+.index-card {
+    min-height: 420px;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
