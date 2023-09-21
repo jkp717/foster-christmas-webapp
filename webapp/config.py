@@ -22,7 +22,7 @@ SPONSORSHIP_DISCLAIMER = """
 """
 
 SPONSOR_CHILD_DISCLAIMER = """
-    Please find your sponsored child(ren) by searching their name (last, first) or ID below
+    Please find your sponsored child(ren) by searching their name and/or #ID below
 """
 
 # database defaults
