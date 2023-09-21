@@ -2,14 +2,15 @@
 
 {% block head_tail %}
   {{ super() }}
-  <link href="{{ url_for('static', filename='css/style.css') }}?v=3" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/style.css') }}?v=4" rel="stylesheet">
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
 {% endblock %}
 
 {% block page_body %}
   <main>
     <nav class="navbar navbar-dark navbar-expand-md">
       <a class="navbar-brand" href="/">
-<!--        <img src="{{ url_for('static', filename='img/the-call-logo.png') }}" height="40" alt="">-->
+        <img src="{{ url_for('static', filename='img/small-logo.png') }}" height="75" alt="">
         <div class="navbar-text align-middle">Holiday Hope Tree
           <div class="float-under-text">Pulaski County, AR</div>
         </div>
@@ -44,13 +45,13 @@
           <h5 class="footer-header">External Links</h5>
           <ul class="list-unstyled">
             <li>
-              <a class="footer-link" href="#!">Pulaski County DCFS</a>
+              <a class="footer-link" href="https://humanservices.arkansas.gov/divisions-shared-services/children-family-services/contact-dcfs/">Pulaski County DCFS</a>
             </li>
             <li>
-              <a class="footer-link"  href="https://that.church">That.Church</a>
+              <a class="footer-link"  href="https://that.church/sherwood/">Sherwood | That.Church</a>
             </li>
             <li>
-              <a class="footer-link" href="https://thecallinarkansas.org/">The CALL</a>
+              <a class="footer-link" href="https://thecallinarkansas.org/pulaski">Pulaski County | The CALL</a>
             </li>
           </ul>
         </div>
