@@ -13,6 +13,56 @@
     {{ lib.render_form(form, return_url, form_opts=form_opts) }}
 {% endblock %}
 
+{% block modal %}
+<div class="modal fade" id="displayModal" tabindex="-1" role="dialog" aria-labelledby="displayModalLabel" aria-hidden="true" style="padding-right: 17px;
+    padding-left: 17px;">
+  <div class="modal-dialog" role="document" style="max-width: 1000px;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="displayModalLabel">IMPORTANT</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col">
+            <div class="details-sub-list">
+              <h5>You have the choice of 2 drop off locations:</h5>
+              <ul class="list-style-circle">
+                <li class="list-item">
+                  <div>The CALL Support Center, 4020 Woodland Heights, Little Rock, AR 72212. </div>
+                  <div>Drop off Tuesday-Thursday, Dec 5-7, from 8:30am-3:30 or please call to reserve a time to drop off gifts. </div>
+                  <div>Contact Matina Taylor or Judi Booth 501-823-0607 with questions regarding drop-offs at this location.</div>
+                </li>
+                <li class="list-item">
+                  <div>That Church Sherwood, 901 E. Kiehl, Sherwood, AR 72120</div>
+                  <div>Drop off Sunday, Dec 10, from 2-5pm or Monday, Dec 11, from 8-11am</div>
+                  <div>Please contact Lillie Price at <a href="mailto: lillie@that.church">lillie@that.church</a> with any questions regarding drop-offs at this location.</div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a type="button" class="btn btn-secondary" href="/">Back</a>
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Continue</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+{{ super() }}
+<script>
+$(function() {
+    $('#displayModal').modal('show');
+});
+</script>
+{% endblock %}
+
 {% block tail %}
   {{ super() }}
   {{ lib.form_js() }}

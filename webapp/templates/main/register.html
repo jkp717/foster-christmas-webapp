@@ -57,6 +57,75 @@
     {% endif %}
 {% endblock %}
 
+{% block modal %}
+<div class="modal fade" id="displayModal" tabindex="-1" role="dialog" aria-labelledby="displayModalLabel" aria-hidden="true" style="padding-right: 17px;
+    padding-left: 17px;">
+  <div class="modal-dialog" role="document" style="max-width: 1000px;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="displayModalLabel">IMPORTANT</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+       <div class="container-fluid">
+        <div class="row">
+          <div class="col" style="margin-bottom: 50px;">
+            <h3 class="display-title">Foster Parents</h3>
+            <hr class="my-12"/>
+            <ul class="list-style-circle">
+              <li class="list-item">
+                This website is for children based out of Pulaski County DHS only.  If you live outside of Pulaski but your child is from a Pulaski County office you will still register here.
+              </li>
+              <li class="list-item">
+                If you live in Pulaski county and have a child from another county please contact your case-worker from that county about how they are handling Christmas, every county is a little different.
+              </li>
+              <li class="list-item">
+                Gift pick up will be at That Church in Sherwood (901 E main, Sherwood) Friday, Dec 15 from 9-5pm.  We would love to meet you and thank you in person
+                but if this time absolutely does not work, please make sure to click the box “Will need DHS to deliver” when registering your child so that we can get that arranged for you.
+              </li>
+            </ul>
+            <div class="details-sub-list">
+              <h5>For children based out of the Jacksonville, South or Southwest offices:</h5>
+              <ul class="list-style-circle">
+                <li class="list-item">
+                  Deadline for the child’s wish lists is Nov 3rd.
+                  After that date the foster child will be given age appropriate gifts or you may have the opportunity to shop donated gifts.
+                  Please reach out to Lillie Price at <a href="mailto: lillie@that.church"> lillie@that.church</a> for more info.
+                </li>
+              </ul>
+            </div>
+            <div class="details-sub-list">
+            <h5>For children based out of the North Office:</h5>
+            <ul class="list-style-circle">
+              <li class="list-item">
+                St Luke’s will be covering all gifts for your child.  Please contact them at <a href="#">TBD</a> with any questions.
+              </li>
+            </ul>
+            </div>
+          </div>
+        </div>
+       </div>
+      </div>
+      <div class="modal-footer">
+        <a type="button" class="btn btn-secondary" href="/">Back</a>
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+{{ super() }}
+<script>
+$(function() {
+    $('#displayModal').modal('show');
+});
+</script>
+{% endblock %}
+
 {% block tail %}
   {{ super() }}
   {{ lib.form_js() }}
