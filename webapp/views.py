@@ -12,10 +12,10 @@ from wtforms_alchemy import PhoneNumberField
 from flask_admin.contrib.sqla.filters import FilterLike, FilterEqual, BooleanEqualFilter
 
 from webapp.models import db, Gift, Child, Parent, DhsOffice, Gender, Race, ShoeSize, ClothingSize, FavColor, \
-    Church, Sponsor
+    Church, Sponsor, SponsorRequest
 import webapp.util as util
 from webapp.config import GIFT_DELIVERY_DISCLAIMER, REGISTER_CHILD_DISCLAIMER, SPONSORSHIP_DISCLAIMER, \
-    SPONSOR_CHILD_DISCLAIMER
+    SPONSOR_CHILD_DISCLAIMER, SPONSOR_REQUEST_DISCLAIMER
 
 
 class IndexView(AdminIndexView):
@@ -189,6 +189,32 @@ class RegisterView(BaseView):
         flash(Markup(Markup(SPONSORSHIP_DISCLAIMER)))
         return self.render(
             'main/sponsor.html',
+            form=form,
+            form_opts=form_opts,
+            return_url='/',
+        )
+
+    @expose('/sponsor-request', methods=['GET', 'POST'])
+    def sponsor_request(self):
+        model_view = SponsorRequestView(SponsorRequest, db.session)
+        # return_url = '/'
+        form = model_view.create_form()
+        form_opts = FormOpts(
+            widget_args=model_view.form_widget_args,
+            form_rules=model_view._form_create_rules  # noqa
+        )
+        if model_view.validate_form(form):
+            model_view.handle_view_exception = self.handle_integrity_error
+            model = model_view.create_model(form)
+            if model:
+                flash(gettext('Thank you for your sponsorship!'), 'success')
+                flash(Markup(SPONSOR_REQUEST_DISCLAIMER), 'success')
+                return redirect('/')
+            else:
+                if request.method == 'GET' or form.errors:
+                    model_view.on_form_prefill(form, id)
+        return self.render(
+            'main/sponsor-request.html',
             form=form,
             form_opts=form_opts,
             return_url='/',
@@ -388,6 +414,23 @@ class SponsorView(BaseView):
                 [rules.HTML(f"""<small class="form-text text-muted">{SPONSOR_CHILD_DISCLAIMER}</small>"""),
                  'children']
             )
+        ])
+    }
+
+
+class SponsorRequestView(BaseView):
+    form_columns = ['first_name', 'last_name', 'phone', 'email', 'request_count', 'preferences']
+    form_overrides = {
+        'phone': PhoneNumberField,
+    }
+    column_labels = {'request_count': "Wishlists Requested"}
+    form_rules = {
+        rules.NestedRule([
+            rules.NestedRule(
+                [rules.Header('Sponsor Info'), 'first_name', 'last_name', 'phone', 'email', 'request_count',
+                 'preferences']
+            ),
+            rules.HTML(f"""<small class="form-text text-muted">{SPONSOR_REQUEST_DISCLAIMER}</small>"""),
         ])
     }
 

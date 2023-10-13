@@ -194,3 +194,19 @@ class Sponsor(db.Model):
     __table_args__ = (
         db.UniqueConstraint('first_name', 'last_name', 'email', name='_sponsor_uc'),
     )
+
+
+class SponsorRequest(db.Model):
+    __tablename__ = "sponsor_request"
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String, nullable=False)
+    last_name = db.Column(db.String, nullable=False)
+    phone = db.Column(PhoneNumberType(), nullable=False)
+    email = db.Column(db.String, nullable=False)
+    request_count = db.Column(db.Integer, default=1)
+    preferences = db.Column(db.Text)
+    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+    __table_args__ = (
+        db.UniqueConstraint('first_name', 'last_name', 'email', name='_sponsor_request_uc'),
+    )
