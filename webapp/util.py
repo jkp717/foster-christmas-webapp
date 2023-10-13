@@ -1,6 +1,7 @@
 from datetime import date
 from flask_admin.model import typefmt
-from flask import current_app, has_request_context, Markup, url_for
+from flask import current_app, has_request_context, url_for
+from markupsafe import Markup
 from flask_admin.contrib.sqla.filters import BaseSQLAFilter
 
 from .models import db, DhsOffice, ShoeSize, ClothingSize, FavColor, Gender, Race, Church

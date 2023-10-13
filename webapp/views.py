@@ -1,6 +1,6 @@
 from sqlalchemy.exc import IntegrityError
-
-from flask import flash, request, redirect, Markup
+from flask import flash, request, redirect
+from markupsafe import Markup
 from flask_admin import expose, BaseView, AdminIndexView
 from flask_admin.actions import action
 from flask_admin.babel import ngettext
