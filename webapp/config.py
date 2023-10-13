@@ -4,8 +4,8 @@
 
 # disclaimers
 GIFT_DELIVERY_DISCLAIMER = """
-    Pickup will be Friday, December 15th from 8:30am-6pm and Saturday Dec 16th from 8:30am-2pm at That Church in 
-    Sherwood. If you are unable to make this work, DHS will be able to deliver to your location.
+    Pickup will be Friday, December 15th from 9am-5pm at That Church in Sherwood. If you are 
+    unable to make this work, DHS will be able to deliver to your location.
 """
 
 REGISTER_CHILD_DISCLAIMER = """
@@ -13,7 +13,7 @@ REGISTER_CHILD_DISCLAIMER = """
     This Christmas we are striving to make every child’s wish list come true!
     Donors and sponsors will choose wish lists to fulfill. Kindly consider that these
     wish lists are meant for donations, and it might pose a challenge to secure sponsors for highly costly lists.
-    Please refrain from any items exceeding a value of $200.
+    Please refrain from any items exceeding a value of $200 and keep total purchase amount under $300 if possible.
 """
 
 SPONSORSHIP_DISCLAIMER = """
@@ -23,6 +23,10 @@ SPONSORSHIP_DISCLAIMER = """
 
 SPONSOR_CHILD_DISCLAIMER = """
     Please find your sponsored child(ren) by searching their name and/or #ID below
+"""
+
+SPONSOR_REQUEST_DISCLAIMER = """
+    Please be looking out for an email with more info!  Wishlist(s) will be sent no later than November 20th.
 """
 
 # database defaults
