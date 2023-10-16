@@ -305,7 +305,7 @@ class ChildView(BaseView):
     ]
     column_searchable_list = [Gift.gift]
     form_rules = [
-        rules.NestedRule([rules.Header('Foster Parent'), 'parent', rules.Macro('render_child_list')]),
+        # rules.NestedRule([rules.Header('Foster Parent'), 'parent']), #rules.Macro('render_child_list')]),
         rules.NestedRule([
             rules.Header('Add Foster Child'), 'first_name', 'last_name', 'dhs_case_worker',
             'dhs_office', 'age', 'race', 'gender', 'fav_color', 'shoe_size', 'clothing_size'
