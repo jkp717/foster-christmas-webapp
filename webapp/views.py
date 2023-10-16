@@ -123,8 +123,9 @@ class RegisterView(BaseView):
                 model_view.on_form_prefill(form, id)
         else:
             form = model_view.create_form()
-            form.parent.data = parent
-            form.parent.render_kw = {'disabled': ''}
+            if hasattr(form, 'parent'):
+                form.parent.data = parent
+                form.parent.render_kw = {'disabled': ''}
             form_opts = FormOpts(
                 widget_args=model_view.form_widget_args,
                 form_rules=model_view._form_create_rules  # noqa
@@ -305,7 +306,7 @@ class ChildView(BaseView):
     ]
     column_searchable_list = [Gift.gift]
     form_rules = [
-        # rules.NestedRule([rules.Header('Foster Parent'), 'parent']), #rules.Macro('render_child_list')]),
+        rules.NestedRule([rules.Header('Foster Parent'), 'parent', rules.Macro('render_child_list')]),
         rules.NestedRule([
             rules.Header('Add Foster Child'), 'first_name', 'last_name', 'dhs_case_worker',
             'dhs_office', 'age', 'race', 'gender', 'fav_color', 'shoe_size', 'clothing_size'
