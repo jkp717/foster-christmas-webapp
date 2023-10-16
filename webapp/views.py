@@ -123,9 +123,8 @@ class RegisterView(BaseView):
                 model_view.on_form_prefill(form, id)
         else:
             form = model_view.create_form()
-            if hasattr(form, 'parent'):
-                form.parent.data = parent
-                form.parent.render_kw = {'disabled': ''}
+            form.parent.data = parent
+            form.parent.render_kw = {'disabled': ''}
             form_opts = FormOpts(
                 widget_args=model_view.form_widget_args,
                 form_rules=model_view._form_create_rules  # noqa
