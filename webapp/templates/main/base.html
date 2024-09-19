@@ -22,7 +22,7 @@
         <div class="navbar-nav">
           <a class="nav-item nav-link" href="{{ get_url('register.parent') }}">Signup a Child</a>
           <a class="nav-item nav-link" href="{{ get_url('register.sponsor') }}">Register a Wishlist</a>
-          <a class="nav-item nav-link" href="https://igfn.us/form/tEmO0w">Donate</a>
+          <a class="nav-item nav-link" href="{{ config['DONATE_URL'] }}">Donate</a>
         </div>
       </div>
     </nav>
@@ -39,7 +39,7 @@
         <div class="col-md-8 mt-md-0 mt-3">
           <h5 class="footer-header">Contact</h5>
           <p>If your church, family or business would like to sponsor a child or host a toy drive,
-            Please email Lillie Price at <a class="footer-contact-link" href="mailto: lillie@that.church">lillie@that.church</a></p>
+            Please email {{ config["CONTACT_NAME"] }} at <a class="footer-contact-link" href="mailto: {{ config['CONTACT_EMAIL'] }}">{{ config['CONTACT_EMAIL'] }}</a></p>
         </div>
         <hr class="clearfix col-md-4 d-md-none pb-3">
         <div class="col-md-3 mb-md-0 mb-3">
@@ -59,8 +59,8 @@
       </div>
     </div>
     <div class="footer-copyright text-center py-3"> Questions? Email
-      <a class="footer-contact-link" href="mailto: lillie@that.church"> lillie@that.church</a>
-      Or call <a class="footer-contact-link" href="tel:618-889-6319">618-889-6319</a>
+      <a class="footer-contact-link" href="mailto: {{ config['CONTACT_EMAIL'] }}"> {{ config['CONTACT_EMAIL'] }}</a>
+      Or call <a class="footer-contact-link" href="tel:{{ config['CONTACT_PHONE'] }}">{{ config['CONTACT_PHONE'] }}</a>
     </div>
   </footer>
   {% endblock %}

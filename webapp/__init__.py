@@ -2,7 +2,7 @@ import os
 from flask import Flask
 from flask_admin import Admin
 
-from .config import db_defaults
+from .config import db_defaults, CONTACT_PHONE, CONTACT_EMAIL, CONTACT_NAME, DONATE_URL
 
 
 def setup_flask_admin(app_instance, session):
@@ -82,5 +82,10 @@ def create_app(debug=True):
                     db.session.commit()
 
     app = setup_flask_admin(app, db.session)
+
+    app.config['CONTACT_PHONE'] = CONTACT_PHONE
+    app.config['CONTACT_EMAIL'] = CONTACT_EMAIL
+    app.config['CONTACT_NAME'] = CONTACT_NAME
+    app.config['DONATE_URL'] = DONATE_URL
 
     return app

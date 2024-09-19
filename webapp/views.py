@@ -1,5 +1,5 @@
 from sqlalchemy.exc import IntegrityError
-from flask import flash, request, redirect
+from flask import flash, request, redirect, current_app
 from markupsafe import Markup
 from flask_admin import expose, BaseView, AdminIndexView
 from flask_admin.actions import action
@@ -9,13 +9,13 @@ from flask_admin.contrib.sqla import ModelView
 from flask_admin.babel import gettext
 from flask_admin.form import rules, FormOpts
 from wtforms_alchemy import PhoneNumberField
-from flask_admin.contrib.sqla.filters import FilterLike, FilterEqual, BooleanEqualFilter
+from flask_admin.contrib.sqla.filters import FilterLike, FilterEqual, BooleanEqualFilter, FloatEqualFilter
 
 from webapp.models import db, Gift, Child, Parent, DhsOffice, Gender, Race, ShoeSize, ClothingSize, FavColor, \
     Church, Sponsor, SponsorRequest
 import webapp.util as util
 from webapp.config import GIFT_DELIVERY_DISCLAIMER, REGISTER_CHILD_DISCLAIMER, SPONSORSHIP_DISCLAIMER, \
-    SPONSOR_CHILD_DISCLAIMER, SPONSOR_REQUEST_DISCLAIMER
+    SPONSOR_CHILD_DISCLAIMER, SPONSOR_REQUEST_DISCLAIMER, CHILD_REGISTRY_HELPER_TEXT
 
 
 class IndexView(AdminIndexView):
@@ -268,15 +268,19 @@ class BaseView(ModelView):
 class ChildView(BaseView):
     column_list = [
         'id', 'parent', 'first_name', 'last_name', 'dhs_office', 'age', 'dhs_case_worker', 'gender',
-        'has_sponsor', 'gifts', 'church', 'note'
+        'sponsor_name', 'gifts', 'church', 'note'
+    ]
+    column_export_list = [
+        'id', 'parent', 'parent.phone', 'parent.email', 'first_name', 'last_name', 'dhs_office', 'age',
+        'dhs_case_worker', 'gender', 'sponsor_name', 'gifts', 'church', 'note'
     ]
     form_exclude_columns = [
-        'id', 'church', 'note', 'has_sponsor'
+        'id', 'church', 'note', 'sponsor_name', 'parent.phone', 'parent.email'
     ]
     column_editable_list = ['church', 'note']
     column_descriptions = {
         "church": "Church given child's gift registration (if applicable)",
-        "has_sponsor": "If a sponsor has been assigned to this child",
+        "sponsor_name": "Sponsor assigned to this child",
         "gifts": "Count of gifts registered (click link to see gifts)",
         
     }
@@ -284,17 +288,19 @@ class ChildView(BaseView):
         ('parent', 'parent.last_name'), 'first_name', 'last_name', 'dhs_case_worker',
         ('dhs_office', 'dhs_office.office'), 'age', ('race', 'race.race'), ('gender', 'gender.gender'),
         ('fav_color', 'fav_color.color'), ('shoe_size', 'shoe_size.size'), ('clothing_size', 'clothing_size.size'),
-        ('church', 'church.church'), 'has_sponsor'
+        ('church', 'church.church'), ('sponsor', 'sponsor.last_name')
     ]
     column_filters = [
         'id',
         'age',
         BooleanEqualFilter('has_sponsor', 'Sponsored'),
+        FilterLike(Sponsor.last_name, 'Sponsor Last Name'),
+        FilterLike(Sponsor.first_name, 'Sponsor First Name'),
         FilterLike(Parent.last_name, 'Parent Last Name'),
         FilterLike(Parent.first_name, 'Parent First Name'),
         FilterLike('dhs_case_worker', 'Case Worker'),
-        FilterLike('first_name', 'Child First Name'),
-        FilterLike('last_name', 'Child Last Name'),
+        FilterEqual(Child.first_name, 'Child First Name'),
+        FilterEqual(Child.last_name, 'Child Last Name'),
         FilterEqual(DhsOffice.office, 'DHS Office', options=util.get_dhs_office_options),
         FilterEqual(Race.race, 'Child Race', options=util.get_race_options),
         FilterEqual(Gender.gender, 'Child Gender', options=util.get_gender_options),
@@ -312,8 +318,7 @@ class ChildView(BaseView):
         ]),
         rules.NestedRule([
             'gifts',
-            rules.Macro('form_helper_text', msg="Please limit to 5 gifts per child"),
-            rules.Macro('form_helper_text', msg="Please refrain from including electronics exceeding a value of $200."),
+            *[rules.Macro('form_helper_text', msg=t) for t in CHILD_REGISTRY_HELPER_TEXT],
         ])
     ]
     inline_models = [(Gift, dict(form_columns=['id', 'gift']))]
@@ -323,7 +328,8 @@ class ChildView(BaseView):
         'fav_color': 'Fav. Color',
         'parent': 'Foster Parent',
         'note': 'Notes',
-        'has_sponsor': 'Sponsored'
+        'has_sponsor': 'Sponsored',
+        'sponsor_name': 'Sponsor'
     }
     column_formatters = {
         'gifts': util.gift_list_formatter

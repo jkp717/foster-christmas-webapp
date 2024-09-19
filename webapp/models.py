@@ -123,6 +123,12 @@ class Child(db.Model):
     def has_sponsor(self):
         return self.sponsor_id is not None
 
+    @hybrid_property
+    def sponsor_name(self):
+        if self.has_sponsor:
+            return f"{self.sponsor.last_name}, {self.sponsor.first_name}"
+        return None
+
     def __repr__(self):
         return f'{self.first_name.title()} (ID: {self.id})'
 
@@ -194,6 +200,9 @@ class Sponsor(db.Model):
     __table_args__ = (
         db.UniqueConstraint('first_name', 'last_name', 'email', name='_sponsor_uc'),
     )
+
+    def __str__(self):
+        return f'{self.last_name, self.first_name}'
 
 
 class SponsorRequest(db.Model):
