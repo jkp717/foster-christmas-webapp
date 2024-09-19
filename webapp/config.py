@@ -4,6 +4,8 @@
 
 # Misc. External URLs
 DONATE_URL = "https://www.facebook.com/profile.php?id=61561174376000"
+AMAZON_WISHLIST = "https://www.amazon.com/registries/gl/guest-view/1NZ0NQBV5R9HK?ref=gr_search_page_result"
+VOLUNTEER_LINK = "https://signup.com/client/invitation2/0bfd78f34abc02061c408255735b7620aae22954/5457541/false?popup=true&amp;preview=true&amp;return=%2FActivities%23%2F5457541%2Fthemes&amp;theme=winter#/invitation"  # noqa
 
 # Main contact info
 CONTACT_NAME = "Lillie Price"

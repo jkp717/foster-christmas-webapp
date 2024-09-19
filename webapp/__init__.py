@@ -2,7 +2,10 @@ import os
 from flask import Flask
 from flask_admin import Admin
 
-from .config import db_defaults, CONTACT_PHONE, CONTACT_EMAIL, CONTACT_NAME, DONATE_URL
+from .config import (
+    db_defaults, CONTACT_PHONE, CONTACT_EMAIL, CONTACT_NAME, DONATE_URL,
+    AMAZON_WISHLIST, VOLUNTEER_LINK
+)
 
 
 def setup_flask_admin(app_instance, session):
@@ -83,9 +86,14 @@ def create_app(debug=True):
 
     app = setup_flask_admin(app, db.session)
 
+    # define contact for use in jinja templates
     app.config['CONTACT_PHONE'] = CONTACT_PHONE
     app.config['CONTACT_EMAIL'] = CONTACT_EMAIL
     app.config['CONTACT_NAME'] = CONTACT_NAME
+
+    # define external urls for use in jinja templates
     app.config['DONATE_URL'] = DONATE_URL
+    app.config['AMAZON_WISHLIST'] = AMAZON_WISHLIST
+    app.config['VOLUNTEER_LINK'] = VOLUNTEER_LINK
 
     return app
