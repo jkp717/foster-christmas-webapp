@@ -10,7 +10,7 @@
   <main>
     <nav class="navbar navbar-dark navbar-expand-md">
       <a class="navbar-brand" href="/">
-        <img src="{{ url_for('static', filename='img/small-logo.png') }}" height="75" alt="">
+        <img src="{{ url_for('static', filename='img/small-logo.png') }}" height="70" alt="">
         <div class="navbar-text align-middle">Holiday Hope Tree
           <div class="float-under-text">Pulaski County, AR</div>
         </div>
@@ -22,7 +22,9 @@
         <div class="navbar-nav">
           <a class="nav-item nav-link" href="{{ get_url('register.parent') }}">Signup a Child</a>
           <a class="nav-item nav-link" href="{{ get_url('register.sponsor') }}">Register a Wishlist</a>
-          <a class="nav-item nav-link" href="{{ config['DONATE_URL'] }}">Donate</a>
+          <a class="nav-item nav-link" href="{{ config['DONATE_URL'] }}">
+            <img src="{{ url_for('static', filename='img/facebook_logo.png') }}" height="37" alt="">
+          </a>
         </div>
       </div>
     </nav>

@@ -14,7 +14,7 @@ CONTACT_PHONE = "618-889-6319"
 
 # disclaimers
 CHILD_REGISTRY_HELPER_TEXT = [
-    "Please limit to 5 gifts per child, you will have a chance to chose more gifts at pickup",
+    "Please limit to 3 gifts per child, you will have a chance to chose more gifts at pickup",
     "Please refrain from including items exceeding a value of $200, if your child lists an item that he/she really wants and is over $200 please note that gift may be the only gift your child receives."  # noqa
 ]
 

@@ -1,5 +1,5 @@
 body {
-    background-color: #fff;
+    background-color: #fffdf4;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -7,17 +7,16 @@ body {
 
 .navbar {
     padding: 0;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
-/*
-    align-items: center;
+    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+    /*align-items: center;
     -ms-flex-pack: justify;
     justify-content: center;
-*/
-    background-color: rgb(91, 136, 65);
+    background-color: rgb(91, 136, 65);*/
+    background-color: rgb(220 190 130 / 70%);
 }
 
 .navbar-dark .navbar-text {
-    /*color: #fff !important;*/
+    color: #00000080 !important;
     font-variant: small-caps;
     font-weight: 500;
     padding-top: 0;
@@ -39,6 +38,7 @@ body {
     font-weight: 500;
     font-variant: all-small-caps;
     font-size: 1.2rem;
+    color: #00000080 !important;
 }
 .navbar-brand {
     font-size: 2rem;
@@ -84,39 +84,47 @@ body {
 }
 
 .page-footer {
-    /*background-color: #f9f9f9;*/
-    background-color: rgba(79, 127, 51, 80%);
-    color: white;
-    box-shadow: 0 -3px 6px rgba(0,0,0,0.16), 0 -3px 6px rgba(0,0,0,0.23);
+    /*background-color: rgba(79, 127, 51, 80%);*/
+    background-color: rgb(220 190 130 / 70%);
+    color: #00000080;
+    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+    /*box-shadow: 0 -3px 6px rgba(0,0,0,0.16), 0 -3px 6px rgba(0,0,0,0.23);*/
     margin-top: auto;
 }
 
 .page-footer .footer-link {
-    color: white;
+    /*color: white;*/
+    color: #00000080 !important;
     font-size: .9rem;
 }
 
 .page-footer .footer-link:hover {
-    color: white;
+    /*color: white;*/
+    color: #00000080 !important;
 }
 
 .page-footer .footer-contact-link {
-    color: white;
+    /*color: white;*/
+    color: #00000080 !important;
     font-weight: 600;
 }
 
 .page-footer .footer-contact-link:hover {
-    color: white;
+    /*color: white;*/
+    color: #00000080 !important;
     font-weight: 600;
 }
 
 .page-footer .footer-header {
-    color: rgba(256,256,256,0.5);
+    /*color: rgba(256,256,256,0.5);*/
+    color: #00000080 !important;
 }
 
 .footer-copyright {
-    background-color: rgba(79, 127, 51, 65%);
-    color: white;
+    /*background-color: rgba(79, 127, 51, 65%);*/
+    background-color: rgb(220 190 130);
+    color: #00000080 !important;
+    /*color: white;*/
 }
 
 .form-helper-text {
@@ -147,4 +155,18 @@ ul.list-style-circle li.list-item {
     min-height: 420px;
     margin-top: 10px;
     margin-bottom: 10px;
+}
+
+.index-card {
+  box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+}
+
+.btn-holidy-red {
+  transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+}
+
+.btn-holiday-red:hover {
+    color: white;
+    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
 }
