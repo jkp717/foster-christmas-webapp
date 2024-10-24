@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timezone
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_utils import PhoneNumberType
 from sqlalchemy.orm import validates
@@ -11,8 +11,8 @@ class Gender(db.Model):
     __tablename__ = "gender"
     id = db.Column(db.Integer, primary_key=True)
     gender = db.Column(db.String, nullable=False, unique=True)
-    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+    create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
 
     def __repr__(self):
         return f'{self.gender}'
@@ -22,8 +22,8 @@ class Race(db.Model):
     __tablename__ = "race"
     id = db.Column(db.Integer, primary_key=True)
     race = db.Column(db.String, nullable=False, unique=True)
-    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+    create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
 
     def __repr__(self):
         return f'{self.race}'
@@ -33,8 +33,8 @@ class FavColor(db.Model):
     __tablename__ = "fav_color"
     id = db.Column(db.Integer, primary_key=True)
     color = db.Column(db.String, nullable=False, unique=True)
-    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+    create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
 
     def __repr__(self):
         return f'{self.color}'
@@ -44,8 +44,8 @@ class ClothingSize(db.Model):
     __tablename__ = "clothing_size"
     id = db.Column(db.Integer, primary_key=True)
     size = db.Column(db.String, nullable=False, unique=True)
-    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+    create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
 
     def __repr__(self):
         return f'{self.size}'
@@ -55,8 +55,8 @@ class ShoeSize(db.Model):
     __tablename__ = "shoe_size"
     id = db.Column(db.Integer, primary_key=True)
     size = db.Column(db.String, nullable=False, unique=True)
-    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+    create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
 
     def __repr__(self):
         return f'{self.size}'
@@ -66,8 +66,8 @@ class DhsOffice(db.Model):
     __tablename__ = "dhs_office"
     id = db.Column(db.Integer, primary_key=True)
     office = db.Column(db.String, nullable=False, unique=True)
-    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+    create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
 
     def __repr__(self):
         return f'{self.office}'
@@ -77,8 +77,8 @@ class Church(db.Model):
     __tablename__ = "church"
     id = db.Column(db.Integer, primary_key=True)
     church = db.Column(db.String, nullable=False, unique=True)
-    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+    create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
 
     def __repr__(self):
         return f'{self.church}'
@@ -112,8 +112,8 @@ class Child(db.Model):
     sponsor = db.relationship('Sponsor', back_populates='children')
     gifts = db.relationship('Gift', back_populates='child', uselist=True, cascade="all, delete-orphan")
     note = db.Column(db.Text)
-    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+    create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
 
     @validates('first_name', 'last_name', 'dhs_case_worker')
     def convert_title(self, key, value):
@@ -145,8 +145,8 @@ class Parent(db.Model):
     email = db.Column(db.String, nullable=False)
     children = db.relationship('Child', back_populates='parent', uselist=True)
     gift_delivery = db.Column(db.Boolean, default=False)
-    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+    create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
     __table_args__ = (
         db.UniqueConstraint('first_name', 'last_name', 'email', name='_parent_uc'),
     )
@@ -173,8 +173,8 @@ class Gift(db.Model):
     child = db.relationship('Child', back_populates='gifts')
     gift = db.Column(db.String, nullable=False)
     received = db.Column(db.Boolean, default=False)
-    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+    create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
 
     @validates('gift')
     def convert_title(self, key, value):
@@ -195,8 +195,8 @@ class Sponsor(db.Model):
     phone = db.Column(PhoneNumberType(), nullable=False)
     email = db.Column(db.String, nullable=False)
     children = db.relationship('Child', back_populates='sponsor', uselist=True)
-    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+    create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
     __table_args__ = (
         db.UniqueConstraint('first_name', 'last_name', 'email', name='_sponsor_uc'),
     )
@@ -214,8 +214,8 @@ class SponsorRequest(db.Model):
     email = db.Column(db.String, nullable=False)
     request_count = db.Column(db.Integer, default=1)
     preferences = db.Column(db.Text)
-    create_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    modify_date = db.Column(db.DateTime, onupdate=datetime.datetime.utcnow)
+    create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
     __table_args__ = (
         db.UniqueConstraint('first_name', 'last_name', 'email', name='_sponsor_request_uc'),
     )

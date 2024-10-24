@@ -1,8 +1,40 @@
-body {
+@font-face {
+    font-family: brightwall;
+    src: url("/static/brightwall-font.otf") format("opentype");
+}
+
+/*body {
     background-color: #fffdf4;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+}*/
+
+body {
+	background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40">\
+    <defs>\
+      <pattern id="tree-pattern" viewBox="-42 -15 84 84" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">\
+          <defs>\
+              <path id="tree-stripe" d="M -25 0 -20 0 0 20 20 0 25 0 0 25" />\
+              <clipPath id="tree-clip">\
+              <path d="M 0 0 20 54 -20 54" />\
+              </clipPath>\
+          </defs>\
+          <g clip-path="url(%23tree-clip)" fill="hsl(49 100% 87%)" transform="rotate(-45 0 27)">\
+              <use href="%23tree-stripe" />\
+              <use y="10" href="%23tree-stripe" />\
+              <use y="20" href="%23tree-stripe" />\
+              <use y="30" href="%23tree-stripe" />\
+              <use y="40" href="%23tree-stripe" />\
+              <use y="50" href="%23tree-stripe" />\
+              <use y="-10" href="%23tree-stripe" />\
+              <use y="-20" href="%23tree-stripe" />\
+          </g>\
+      </pattern>\
+  </defs>\
+  <rect fill="url(%23tree-pattern)" width="60" height="40" />\
+    </svg>');
+	background-size: 100%;
 }
 
 .navbar {
@@ -10,13 +42,13 @@ body {
     box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
     /*align-items: center;
     -ms-flex-pack: justify;
-    justify-content: center;
-    background-color: rgb(91, 136, 65);*/
-    background-color: rgb(220 190 130 / 70%);
+    justify-content: center;*/
+    /*background-color: rgb(220 190 130 / 70%);*/
+    background-color: #678FD4;
 }
 
 .navbar-dark .navbar-text {
-    color: #00000080 !important;
+    /*color: #00000080 !important;*/
     font-variant: small-caps;
     font-weight: 500;
     padding-top: 0;
@@ -25,24 +57,26 @@ body {
 
 .navbar-text .float-under-text {
     position: absolute;
-    top: 3.2rem;
-    font-size: 0.7rem;
-    font-style: italic;
+    top: 3.1rem;
+    font-size: 1rem;
+    font-variant: all-small-caps;
     font-weight: 400;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
 .navbar-expand-md .navbar-nav .nav-link {
-    padding-right: 3rem;
-    /* padding-left: 0; */
-    /*color: white;*/
+    padding-right: 2rem;
     font-weight: 500;
     font-variant: all-small-caps;
-    font-size: 1.2rem;
-    color: #00000080 !important;
+    font-size: 1.5rem;
+    /*color: #00000080 !important;*/
 }
 .navbar-brand {
-    font-size: 2rem;
+    font-size: 1.25rem;
     margin-left: 10px;
+    font-family: "brightwall", cursive;
+    font-weight: 400;
+    font-style: normal;
 }
 
 .navbar-brand > img {
@@ -56,6 +90,10 @@ body {
     color: #fff;
     background-color: #bc4749;
     border-color: #bc4749;
+    position: absolute;
+    bottom: 15px;
+    transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
 }
 
 .index-inner-container {
@@ -84,46 +122,46 @@ body {
 }
 
 .page-footer {
-    /*background-color: rgba(79, 127, 51, 80%);*/
-    background-color: rgb(220 190 130 / 70%);
-    color: #00000080;
+    background-color: #678fd4d9;
+    color: rgba(255, 255, 255, .75);
     box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
-    /*box-shadow: 0 -3px 6px rgba(0,0,0,0.16), 0 -3px 6px rgba(0,0,0,0.23);*/
     margin-top: auto;
 }
 
 .page-footer .footer-link {
     /*color: white;*/
-    color: #00000080 !important;
+/*    color: #00000080 !important;*/
+    color: rgba(255, 255, 255, .75);
     font-size: .9rem;
 }
 
 .page-footer .footer-link:hover {
     /*color: white;*/
-    color: #00000080 !important;
+    color: rgba(255, 255, 255, 1);
+/*    color: #00000080 !important;*/
 }
 
 .page-footer .footer-contact-link {
-    /*color: white;*/
-    color: #00000080 !important;
+    color: rgba(255, 255, 255, .75);
     font-weight: 600;
 }
 
 .page-footer .footer-contact-link:hover {
-    /*color: white;*/
-    color: #00000080 !important;
+    color: rgba(255, 255, 255, 1);
     font-weight: 600;
 }
 
 .page-footer .footer-header {
     /*color: rgba(256,256,256,0.5);*/
-    color: #00000080 !important;
+    color: rgba(255, 255, 255, .75);
+/*    color: #00000080 !important;*/
 }
 
 .footer-copyright {
     /*background-color: rgba(79, 127, 51, 65%);*/
-    background-color: rgb(220 190 130);
-    color: #00000080 !important;
+    background-color: #678FD4;
+/*    color: #00000080 !important;*/
+    color: rgba(255, 255, 255, .5);
     /*color: white;*/
 }
 
@@ -140,7 +178,7 @@ h1.display-title {
 }
 
 .index-container {
-    margin: 30px 0px;
+    margin: 50px 0;
 }
 
 .details-sub-list {
@@ -152,19 +190,21 @@ ul.list-style-circle li.list-item {
 }
 
 .index-card {
-    min-height: 420px;
+/*    min-height: 445px;*/
     margin-top: 10px;
     margin-bottom: 10px;
+    min-width: 320px;
+    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
 }
 
-.index-card {
-  box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+.index-card > .card-body {
+    padding-bottom: 4.5rem;
 }
 
-.btn-holidy-red {
-  transition: all 0.3s cubic-bezier(.25,.8,.25,1);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+.index-card > .card-body > .card-text {
+   min-height: 72px;
 }
+
 
 .btn-holiday-red:hover {
     color: white;
