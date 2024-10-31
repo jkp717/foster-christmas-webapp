@@ -1,8 +1,10 @@
 from datetime import date
 from flask_admin.model import typefmt
+from flask_admin.babel import lazy_gettext
 from flask import current_app, has_request_context, url_for
 from markupsafe import Markup
 from flask_admin.contrib.sqla.filters import BaseSQLAFilter
+from flask_admin.contrib.sqla import tools
 
 from .models import db, DhsOffice, ShoeSize, ClothingSize, FavColor, Gender, Race, Church
 
@@ -104,3 +106,16 @@ class QuerySelectFilter(BaseSQLAFilter):
     def operation(self):
         return 'is'
 
+
+class FilterCaseLike(BaseSQLAFilter):
+    def apply(self, query, value, alias=None):
+
+        if isinstance(value, str):
+            value = value.lower()
+
+        stmt = tools.parse_like_term(value)
+        print(self.get_column(alias))
+        return query.filter(self.get_column(alias).ilike(stmt))
+
+    def operation(self):
+        return lazy_gettext('contains')

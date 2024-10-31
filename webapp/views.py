@@ -9,6 +9,7 @@ from flask_admin.contrib.sqla import ModelView
 from flask_admin.babel import gettext
 from flask_admin.form import rules, FormOpts
 from wtforms_alchemy import PhoneNumberField
+from wtforms.widgets import TelInput
 from flask_admin.contrib.sqla.filters import FilterLike, FilterEqual, BooleanEqualFilter, FloatEqualFilter
 
 from webapp.models import db, Gift, Child, Parent, DhsOffice, Gender, Race, ShoeSize, ClothingSize, FavColor, \
@@ -17,6 +18,9 @@ import webapp.util as util
 from webapp.config import GIFT_DELIVERY_DISCLAIMER, REGISTER_CHILD_DISCLAIMER, SPONSORSHIP_DISCLAIMER, \
     SPONSOR_CHILD_DISCLAIMER, SPONSOR_REQUEST_DISCLAIMER, CHILD_REGISTRY_HELPER_TEXT
 
+
+class PhoneNumberField2(PhoneNumberField):
+    widget = TelInput()
 
 class IndexView(AdminIndexView):
 
@@ -41,6 +45,7 @@ class RegisterView(BaseView):
     def parent(self):
         model_view = ParentView(Parent, db.session)
         return_url = '/'
+
         id = get_mdict_item_or_list(request.args, 'id')
         if id is not None:
             model = model_view.get_one(id)
@@ -78,6 +83,8 @@ class RegisterView(BaseView):
                 if model:
                     # flash(gettext('Your information has been saved! '), 'success')
                     return redirect(self.get_url('register.child', parent_id=model.id))
+        validation_attrs = ["required", "disabled", "readonly", "maxlength", "minlength", "pattern",]
+        # setattr(form.phone.widget, 'validation_attrs', validation_attrs)
         return self.render(
             'main/register.html',
             form=form,
@@ -294,13 +301,13 @@ class ChildView(BaseView):
         'id',
         'age',
         BooleanEqualFilter('has_sponsor', 'Sponsored'),
-        FilterLike(Sponsor.last_name, 'Sponsor Last Name'),
-        FilterLike(Sponsor.first_name, 'Sponsor First Name'),
-        FilterLike(Parent.last_name, 'Parent Last Name'),
-        FilterLike(Parent.first_name, 'Parent First Name'),
-        FilterLike('dhs_case_worker', 'Case Worker'),
-        FilterEqual(Child.first_name, 'Child First Name'),
-        FilterEqual(Child.last_name, 'Child Last Name'),
+        util.FilterCaseLike(Sponsor.last_name, 'Sponsor Last Name'),
+        util.FilterCaseLike(Sponsor.first_name, 'Sponsor First Name'),
+        util.FilterCaseLike(Parent.last_name, 'Parent Last Name'),
+        util.FilterCaseLike(Parent.first_name, 'Parent First Name'),
+        util.FilterCaseLike('dhs_case_worker', 'Case Worker'),
+        util.FilterCaseLike(Child.first_name, 'Child First Name'),
+        util.FilterCaseLike(Child.last_name, 'Child Last Name'),
         FilterEqual(DhsOffice.office, 'DHS Office', options=util.get_dhs_office_options),
         FilterEqual(Race.race, 'Child Race', options=util.get_race_options),
         FilterEqual(Gender.gender, 'Child Gender', options=util.get_gender_options),
@@ -345,7 +352,7 @@ class ChildView(BaseView):
 
 
 class ParentView(BaseView):
-    form_columns = ['first_name', 'last_name', 'phone', 'email', 'gift_delivery']
+    form_columns = ['first_name', 'last_name', 'email', 'phone', 'gift_delivery']
     form_rules = {
         rules.NestedRule([
             rules.NestedRule(
@@ -357,11 +364,17 @@ class ParentView(BaseView):
             )
         ])
     }
+    column_filters = [
+        BooleanEqualFilter(Parent.gift_delivery, 'DHS Gift Delivery'),
+        util.FilterCaseLike(Parent.last_name, 'Last Name'),
+        util.FilterCaseLike(Parent.first_name, 'First Name'),
+        util.FilterCaseLike(Parent.email, 'Email'),
+    ]
     column_labels = {
         'gift_delivery': 'DHS Delivery'
     }
     form_overrides = {
-        'phone': PhoneNumberField,
+        'phone': PhoneNumberField2,
     }
 
 
