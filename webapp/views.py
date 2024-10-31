@@ -1,5 +1,5 @@
 from sqlalchemy.exc import IntegrityError
-from flask import flash, request, redirect, current_app
+from flask import flash, request, redirect
 from markupsafe import Markup
 from flask_admin import expose, BaseView, AdminIndexView
 from flask_admin.actions import action
@@ -10,7 +10,7 @@ from flask_admin.babel import gettext
 from flask_admin.form import rules, FormOpts
 from wtforms_alchemy import PhoneNumberField
 from wtforms.widgets import TelInput
-from flask_admin.contrib.sqla.filters import FilterLike, FilterEqual, BooleanEqualFilter, FloatEqualFilter
+from flask_admin.contrib.sqla.filters import FilterEqual, BooleanEqualFilter
 
 from webapp.models import db, Gift, Child, Parent, DhsOffice, Gender, Race, ShoeSize, ClothingSize, FavColor, \
     Church, Sponsor, SponsorRequest
