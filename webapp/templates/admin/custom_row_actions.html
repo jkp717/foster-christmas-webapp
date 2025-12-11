@@ -1,0 +1,7 @@
+{% import 'admin/lib.html' as lib with context %}
+
+{% macro split_gifts_action(action, row_id, row) %}
+<a class="icon{{' disabled' if row.is_split else '' }}" href="{{ get_url('child.split_gifts', id=row_id, url=return_url) }}" title="{{ action.title or '' }}">
+  <span class="fa fa-object-ungroup"></span>
+</a>
+{% endmacro %}

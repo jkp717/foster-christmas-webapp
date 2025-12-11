@@ -3,8 +3,8 @@ from flask import Flask
 from flask_admin import Admin
 
 from .config import (
-    db_defaults, CONTACT_PHONE, CONTACT_EMAIL, CONTACT_NAME, DONATE_URL,
-    AMAZON_WISHLIST, VOLUNTEER_LINK
+    db_defaults, CONTACT_PHONE, CONTACT_EMAIL, CONTACT_NAME, FACEBOOK_URL, AMAZON_WISHLIST, VOLUNTEER_LINK,
+    DONATE_BUTTON_HTML, GIFT_DROPOFF_LOCATIONS, GIFT_PICKUP_DATETIME, GIFT_PICKUP_LOCATION, CHILD_SIGNUP_DEADLINE
 )
 
 
@@ -15,7 +15,7 @@ def setup_flask_admin(app_instance, session):
     admin = Admin(
         app=app_instance,
         name='Admin',
-        template_mode='bootstrap4',
+        # template_mode='bootstrap4',
         endpoint='/admin',
         url='/admin',
         index_view=vw.AdminReportsView(name='Reports', endpoint='/admin', url='/admin')
@@ -24,16 +24,19 @@ def setup_flask_admin(app_instance, session):
     base = Admin(
         app=app_instance,
         name='Hope for the Holidays',
-        template_mode='bootstrap4',
+        # template_mode='bootstrap4',
         url='/',
         index_view=vw.IndexView(name='Home', url='/')
     )
     base.add_view(vw.RegisterView(name='Register', endpoint='register'))  # noqa
 
     # admin views
-    admin.add_view(vw.ParentView(mdl.Parent, session, name='Parents'))
-    admin.add_view(vw.ChildView(mdl.Child, session, name='Children'))
-    admin.add_view(vw.GiftView(mdl.Gift, session, name='Gifts'))
+    admin.add_view(vw.ParentView(mdl.Parent, session, name='Current', category='Parents'))
+    admin.add_view(vw.ParentArchiveView(mdl.ParentArchive, session, name='Archive', category='Parents'))
+    admin.add_view(vw.ChildView(mdl.Child, session, name='Current', category='Children'))
+    admin.add_view(vw.ChildArchiveView(mdl.ChildArchive, session, name='Archive', category='Children'))
+    admin.add_view(vw.GiftView(mdl.Gift, session, name='Current', category='Gifts'))
+    admin.add_view(vw.GiftArchiveView(mdl.GiftArchive, session, name='Archive', category='Gifts'))
     admin.add_view(vw.SponsorView(mdl.Sponsor, session, name='Registered', category='Sponsors'))
     admin.add_view(vw.SponsorRequestView(mdl.SponsorRequest, session, name='Requests', category='Sponsors'))
     admin.add_view(vw.MiscView(mdl.ShoeSize, session, name='Shoe Sizes', category='Form Options'))
@@ -42,6 +45,7 @@ def setup_flask_admin(app_instance, session):
     admin.add_view(vw.MiscView(mdl.Gender, session, name='Gender', category='Form Options'))
     admin.add_view(vw.MiscView(mdl.DhsOffice, session, name='DHS Office', category='Form Options'))
     admin.add_view(vw.MiscView(mdl.Church, session, name='Church', category='Form Options'))
+    admin.add_view(vw.GiftFulfillmentView(mdl.GiftFulfillment, session, name='Gift Fulfillment', category='Children'))
 
     return app_instance
 
@@ -92,8 +96,18 @@ def create_app(debug=True):
     app.config['CONTACT_NAME'] = CONTACT_NAME
 
     # define external urls for use in jinja templates
-    app.config['DONATE_URL'] = DONATE_URL
+    app.config['FACEBOOK_URL'] = FACEBOOK_URL
     app.config['AMAZON_WISHLIST'] = AMAZON_WISHLIST
     app.config['VOLUNTEER_LINK'] = VOLUNTEER_LINK
+    app.config['DONATE_BUTTON_HTML'] = DONATE_BUTTON_HTML
+
+    app.config['GIFT_DROPOFF_LOCATIONS'] = GIFT_DROPOFF_LOCATIONS
+    app.config['GIFT_PICKUP_LOCATION'] = GIFT_PICKUP_LOCATION
+    app.config['GIFT_PICKUP_DATETIME'] = GIFT_PICKUP_DATETIME
+    app.config['CHILD_SIGNUP_DEADLINE'] = CHILD_SIGNUP_DEADLINE
+
+    @app.shell_context_processor
+    def shell_context():
+        return {'app': app, 'db': db}
 
     return app

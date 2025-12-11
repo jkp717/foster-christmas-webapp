@@ -5,7 +5,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cookie&family=Oleo+Script:wght@400;700&display=swap" rel="stylesheet">
-  <link href="{{ url_for('static', filename='css/style.css') }}?v=5" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/style.css') }}?v=8" rel="stylesheet">
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
 {% endblock %}
 
@@ -13,9 +13,9 @@
   <main>
     <nav class="navbar navbar-dark navbar-expand-md">
       <a class="navbar-brand" href="/">
-        <img src="{{ url_for('static', filename='img/small-logo.png') }}" height="70" alt="">
+        <!--<img src="{{ url_for('static', filename='img/small-logo.png') }}" height="70" alt="">-->
         <div class="navbar-text align-middle">Holiday Hope Tree
-          <div class="float-under-text">Pulaski County, AR</div>
+          <!--<div class="float-under-text">Pulaski County, AR</div>-->
         </div>
       </a>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
@@ -23,9 +23,9 @@
       </button>
       <div class="collapse navbar-collapse justify-content-end" id="navbarNavAltMarkup">
         <div class="navbar-nav">
-          <a class="nav-item nav-link" href="{{ get_url('register.parent') }}">Signup a Child</a>
-          <a class="nav-item nav-link" href="{{ get_url('register.sponsor') }}">Register a Wishlist</a>
-          <a class="nav-item nav-link" href="{{ config['DONATE_URL'] }}">
+          <a class="nav-item nav-link" href="{{ get_url('admin.about_us') }}">About Us</a>
+          {{ config['DONATE_BUTTON_HTML'] }}
+          <a class="nav-item nav-link" href="{{ config['FACEBOOK_URL'] }}">
             <img src="{{ url_for('static', filename='img/facebook_logo.png') }}" height="37" alt="">
           </a>
         </div>
@@ -47,26 +47,12 @@
             Please email {{ config["CONTACT_NAME"] }} at <a class="footer-contact-link" href="mailto: {{ config['CONTACT_EMAIL'] }}">{{ config['CONTACT_EMAIL'] }}</a></p>
         </div>
         <hr class="clearfix col-md-4 d-md-none pb-3">
-        <div class="col-md-3 mb-md-0 mb-3">
-          <h5 class="footer-header">External Links</h5>
-          <ul class="list-unstyled">
-            <li>
-              <a class="footer-link" href="https://humanservices.arkansas.gov/divisions-shared-services/children-family-services/contact-dcfs/">Pulaski County DCFS</a>
-            </li>
-            <li>
-              <a class="footer-link"  href="https://that.church/sherwood/">Sherwood | That.Church</a>
-            </li>
-            <li>
-              <a class="footer-link" href="https://thecallinarkansas.org/pulaski">Pulaski County | The CALL</a>
-            </li>
-          </ul>
-        </div>
-      </div>
     </div>
     <div class="footer-copyright text-center py-3"> Questions? Email
       <a class="footer-contact-link" href="mailto: {{ config['CONTACT_EMAIL'] }}"> {{ config['CONTACT_EMAIL'] }}</a>
       Or call <a class="footer-contact-link" href="tel:{{ config['CONTACT_PHONE'] }}">{{ config['CONTACT_PHONE'] }}</a>
     </div>
+    <div class="footer-copyright text-center"><a class="footer-contact-link font-weight-light font-italic" style="font-size: 0.8em;" href="{{ get_url('admin.privacy_policy') }}">Privacy & Security Policies</a></div>
   </footer>
   {% endblock %}
 {% endblock %}

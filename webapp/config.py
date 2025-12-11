@@ -1,34 +1,64 @@
+from markupsafe import Markup
+
 #
 # Webapp Configurations
 #
 
 # Misc. External URLs
-DONATE_URL = "https://www.facebook.com/profile.php?id=61561174376000"
-AMAZON_WISHLIST = "https://www.amazon.com/registries/gl/guest-view/1NZ0NQBV5R9HK?ref=gr_search_page_result"
+FACEBOOK_URL = "https://www.facebook.com/profile.php?id=61561174376000"
+AMAZON_WISHLIST = "https://www.amazon.com/registries/gl/guest-view/3FC1SM55DD3KA?ref=gr_search_page_result"
 VOLUNTEER_LINK = "https://signup.com/client/invitation2/0bfd78f34abc02061c408255735b7620aae22954/5457541/false?popup=true&amp;preview=true&amp;return=%2FActivities%23%2F5457541%2Fthemes&amp;theme=winter#/invitation"  # noqa
+DONATE_BUTTON_HTML = Markup("""
+      <form class="nav-item nav-link nav-form" name="PrePage" method="post" action="https://Simplecheckout.authorize.net/payment/CatalogPayment.aspx">
+        <input type="hidden" name="LinkId" value="fcf83d4e-ba93-483c-9217-34cd71e93ebf" />
+        <input class="nav-form-submit" type="submit" value="Donate" />
+      </form>
+    """)
 
 # Main contact info
 CONTACT_NAME = "Lillie Price"
 CONTACT_EMAIL = "holidayhopetreepulaski@gmail.com"
 CONTACT_PHONE = "618-889-6319"
 
+# Child key starting value in DB
+CHILD_ID_START_VALUE = 1
+CHILD_ID_END_VALUE = 399
+
+# Dates & Locations
+GIFT_PICKUP_DATETIME = "Friday, December 12th 9-5pm"
+GIFT_PICKUP_LOCATION = "That Church Sherwood (901 E Kiehl Ave, Sherwood)"
+CHILD_SIGNUP_DEADLINE = "Nov 2nd"
+GIFT_DROPOFF_LOCATIONS = [
+    {
+        "LOCATION": "The CALL Support Center, 4020 Woodland Heights, Little Rock, AR 72212",
+        "DATETIME": "Tuesday-Thursday, December 2nd-4th, from 8:30am-3:30 or please call to reserve a time to drop off gifts",
+        "ADDITIONAL_INSTRUCTIONS": ""
+    },
+    {
+        "LOCATION": "That Church Sherwood, 901 E. Kiehl, Sherwood, AR 72120",
+        "DATETIME": "Sunday, Dec 7th, from 2-5pm or Monday, Dec 8th, from 8-11am",
+        "ADDITIONAL_INSTRUCTIONS": Markup(f"""Please contact {CONTACT_NAME} at <a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a> with any questions regarding drop-offs at this location.""")
+    }
+]
+
 # disclaimers
 CHILD_REGISTRY_HELPER_TEXT = [
-    "Please limit to 3 gifts per child, you will have a chance to chose more gifts at pickup",
-    "Please refrain from including items exceeding a value of $200, if your child lists an item that he/she really wants and is over $200 please note that gift may be the only gift your child receives."  # noqa
+    "Please limit to 3 gifts per child",
+    "Please refrain from including items exceeding a value of $200, if your child lists an item that he/she really wants and is over $200 please note that gift may be the only gift your child receives.",  # noqa,
+    "No cell phones please"
 ]
 
 GIFT_DELIVERY_DISCLAIMER = """
-    Pickup will be Friday, December 13th from 9am-5pm at That Church in Sherwood. If you are 
+    Pickup will be Friday, December 12th from 9am-5pm at That Church in Sherwood. If you are 
     unable to make this work, DHS will be able to deliver to your location.
 """
 
 REGISTER_CHILD_DISCLAIMER = """
-    <b>PLEASE READ!</b> Thank you so much for making a difference in a child’s life!
-    This Christmas we are striving to make every child’s wish list come true!
-    Donors and sponsors will choose wish lists to fulfill. Kindly consider that these
-    wish lists are meant for donations, and it might pose a challenge to secure sponsors for highly costly lists.
-    Please refrain from any items exceeding a value of $200 and keep total purchase amount under $300 if possible.
+    <b>PLEASE READ!</b> Thank you so much for making a difference in a child’s life! This Christmas we 
+    are striving to make every child’s wish list come true! Donors and sponsors will choose wish lists to fulfill. 
+    Kindly consider that these wish lists are meant for donations, and it might pose a challenge to secure sponsors 
+    for highly costly lists. Please refrain from any items exceeding a value of $200 and keep total purchase amount 
+    under $300 if possible.
 """
 
 SPONSORSHIP_DISCLAIMER = """
@@ -41,7 +71,7 @@ SPONSOR_CHILD_DISCLAIMER = """
 """
 
 SPONSOR_REQUEST_DISCLAIMER = """
-    Please be looking out for an email with more info!  Wishlist(s) will be sent no later than November 20th.
+    Please be looking out for an email with more info!  Wishlist(s) will be sent no later than November 19th.
 """
 
 # database defaults

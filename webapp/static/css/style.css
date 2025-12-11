@@ -1,3 +1,213 @@
+@font-face {
+    font-family: brightwall;
+    src: url("/static/brightwall-font.otf") format("opentype");
+}
+
+/*body {
+    background-color: #fffdf4;
+}*/
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    /*background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40">\
+    <defs>\
+      <pattern id="tree-pattern" viewBox="-42 -15 84 84" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">\
+          <defs>\
+              <path id="tree-stripe" d="M -25 0 -20 0 0 20 20 0 25 0 0 25" />\
+              <clipPath id="tree-clip">\
+              <path d="M 0 0 20 54 -20 54" />\
+              </clipPath>\
+          </defs>\
+          <g clip-path="url(%23tree-clip)" fill="hsl(49 100% 87%)" transform="rotate(-45 0 27)">\
+              <use href="%23tree-stripe" />\
+              <use y="10" href="%23tree-stripe" />\
+              <use y="20" href="%23tree-stripe" />\
+              <use y="30" href="%23tree-stripe" />\
+              <use y="40" href="%23tree-stripe" />\
+              <use y="50" href="%23tree-stripe" />\
+              <use y="-10" href="%23tree-stripe" />\
+              <use y="-20" href="%23tree-stripe" />\
+          </g>\
+      </pattern>\
+  </defs>\
+  <rect fill="url(%23tree-pattern)" width="60" height="40" />\
+    </svg>');*/
+    background-size: 100%;
+}
+
+.navbar {
+    padding: 0;
+    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+    /*align-items: center;
+    -ms-flex-pack: justify;
+    justify-content: center;*/
+    /*background-color: rgb(220 190 130 / 70%);*/
+    /*background-color: #1b9421;*/
+    background-color: #af1e2c;
+}
+
+.navbar-dark .navbar-text {
+    /*color: #00000080 !important;*/
+    font-variant: small-caps;
+    font-weight: 500;
+    /*padding-top: 0;*/
+    /*padding-bottom: 10px;*/
+}
+
+.navbar-text .float-under-text {
+    position: absolute;
+    padding-left: 5px;
+    top: 3.3rem;
+    font-size: 0.75rem;
+    font-variant: none;
+    font-weight: 400;
+    font-style: italic;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+.navbar-expand-md .navbar-nav .nav-link {
+    padding-right: 2rem;
+    font-weight: 500;
+    font-variant: all-small-caps;
+    font-size: 1.5rem;
+    /*color: #00000080 !important;*/
+}
+.navbar-brand {
+    font-size: 1.25rem;
+    margin-left: 10px;
+    font-family: "brightwall", cursive;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.navbar-brand > .navbar-text {
+    font-variant: none;
+}
+
+.navbar-brand > img {
+    /*background-color: #bc4749;*/
+    /*border-radius: 6px;*/
+    padding: 3px;
+    margin: 0px 5px;
+}
+
+.nav-item.nav-form {
+    background-color: unset !important;
+    border: unset !important;
+}
+
+.nav-form-submit {
+    color: rgba(255, 255, 255, .5);
+    background-color: unset !important;
+    border: unset !important;
+    padding-right: 2rem;
+    font-weight: 500;
+    font-variant: all-small-caps;
+    font-size: 1.5rem;
+}
+
+.nav-form-submit:focus, .nav-form-submit:hover {
+    color: rgba(255, 255, 255, .75);
+}
+
+.nav-item.nav-form > .nav-link {
+    background-color: unset !important;
+    border: unset !important;
+}
+
+.btn-holiday-red {
+    color: #fff;
+    background-color: #bc4749;
+    border-color: #bc4749;
+    position: absolute;
+    bottom: 15px;
+    transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+}
+
+.index-inner-container {
+    margin-top: 30px;
+}
+
+.list-header {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+}
+
+.list-children {
+    margin-bottom: 30px
+}
+
+.list-children .list-group-item {
+    padding: 0.25rem 1.25rem;
+}
+
+.list-children:first-child .list-group-item:first-child {
+    border-top: 1px solid rgba(0,0,0,.125);
+}
+
+.list-group-flush:last-child .list-group-item:last-child {
+    border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+.page-footer {
+    /*background-color: #678fd4d9;
+    background-color: rgba(27, 148, 33, .65);*/
+    background-color: #e97c87;
+    color: rgba(255, 255, 255, .75);
+    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+    margin-top: auto;
+}
+
+.page-footer .footer-link {
+    /*color: white;*/
+/*    color: #00000080 !important;*/
+    color: rgba(255, 255, 255, .75);
+    font-size: .9rem;
+}
+
+.page-footer .footer-link:hover {
+    /*color: white;*/
+    color: rgba(255, 255, 255, 1);
+/*    color: #00000080 !important;*/
+}
+
+.page-footer .footer-contact-link {
+    color: rgba(255, 255, 255, .75);
+    font-weight: 600;
+}
+
+.page-footer .footer-contact-link:hover {
+    color: rgba(255, 255, 255, 1);
+    font-weight: 600;
+}
+
+.page-footer .footer-header {
+    /*color: rgba(256,256,256,0.5);*/
+    color: rgba(255, 255, 255, .75);
+/*    color: #00000080 !important;*/
+}
+
+.footer-copyright {
+    /*background-color: rgba(79, 127, 51, 65%);*/
+    /*background-color: #1b9421;*/
+    background-color: #af1e2c;
+/*    color: #00000080 !important;*/
+    color: rgba(255, 255, 255, .5);
+    /*color: white;*/
+}
+
+.form-helper-text {
+    font-size: .8rem;
+    font-style: italic;
+    font-weight: 600;
+}
+
+h1.display-title {
+    font-size: 3rem;
+    font-weight: 800;
     font-variant: petite-caps;
 }
 
@@ -11,6 +221,10 @@
 
 ul.list-style-circle li.list-item {
     margin-bottom: 13px;
+}
+
+.card-row {
+    margin: 50px 0;
 }
 
 .index-card {
@@ -29,8 +243,11 @@ ul.list-style-circle li.list-item {
    min-height: 72px;
 }
 
-
 .btn-holiday-red:hover {
     color: white;
     box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+}
+
+#about-us-container {
+    padding: 0 30px;
 }

@@ -11,7 +11,7 @@ class Config:
     # SECRET_KEY_SALT = base64.b64decode(bytes(os.environ.get('SECRET_KEY_SALT'), "utf-8"))
     FLASK_ADMIN_FLUID_LAYOUT = True
     INSTANCE_PATH = os.path.join(basedir, 'instance')
-    SQLITE_DATABASE_PATH = os.path.join(INSTANCE_PATH, 'webapp.db')
+    SQLITE_DATABASE_PATH = os.path.join(INSTANCE_PATH, 'webapp2.db')
     SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(INSTANCE_PATH, SQLITE_DATABASE_PATH)}"
 
 

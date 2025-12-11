@@ -1,0 +1,14 @@
+{% extends 'admin/model/list.html' %}
+{% block tail %}
+    {{ super() }}
+    <script>
+        $(document).ready(function() {
+            // Select all editable fields in the table
+            $('.editable').on('save', function(e, params) {
+                setTimeout(function() {
+                    window.location.reload(true); // 'true' forces a reload from the server, not cache
+                }, 100);
+            });
+        });
+    </script>
+{% endblock %}

@@ -1,9 +1,9 @@
-from datetime import date
+from datetime import date, datetime
 from flask_admin.model import typefmt
 from flask_admin.babel import lazy_gettext
 from flask import current_app, has_request_context, url_for
 from markupsafe import Markup
-from flask_admin.contrib.sqla.filters import BaseSQLAFilter
+from flask_admin.contrib.sqla.filters import BaseSQLAFilter, BooleanEqualFilter, FilterLike, FilterEqual
 from flask_admin.contrib.sqla import tools
 
 from .models import db, DhsOffice, ShoeSize, ClothingSize, FavColor, Gender, Race, Church
@@ -21,9 +21,17 @@ def gift_list_formatter(view, context, model, name):  # noqa
     filter_txt = 'flt0_child_id_equals'
     if cnt > 0:
         return Markup(
-            f"""<a class="list-model-link" href='{url_for("gift.index_view")}?{filter_txt}={model.id}'>{cnt}</a>"""
+            f"""<a class="list-model-link" href='{url_for("gift.index_view")}?{filter_txt}={model.child_id}'>{cnt}</a>"""
         )
     return "0"
+
+
+def child_id_formatter(view, context, model, name):  # noqa
+    if model.is_split:
+        return Markup(
+            f"""<div class="disabled">{getattr(model, name)}</a>"""
+        )
+    return Markup(getattr(model, name))
 
 
 def sponsor_children_formatter(view, context, model, name):  # noqa
@@ -47,6 +55,11 @@ def title_case_formatter(view, context, model, name):
     `name` is property name
     """
     return getattr(model, name, '').title()
+
+
+def datetime_formatter(view, context, model, name):
+    if isinstance(getattr(model, name), datetime):
+        return getattr(model, name).strftime('%m/%d/%Y %I:%M %p')
 
 
 def get_dhs_office_options():
@@ -90,6 +103,65 @@ def get_race_options():
     return tuple([(o.race, o.race) for o in db.session.query(Race).all()])
 
 
+def get_parent_filters(model_cls):
+    """Generates the column_filters list for a given Parent/ParentArchive model."""
+    return [
+        BooleanEqualFilter(model_cls.gift_delivery, 'DHS Gift Delivery'),
+        FilterCaseLike(model_cls.last_name, 'Last Name'),
+        FilterCaseLike(model_cls.first_name, 'First Name'),
+        FilterCaseLike(model_cls.email, 'Email'),
+        FilterLike(model_cls.phone, 'Phone'),
+    ]
+
+
+def get_gift_filters(model_cls, child_model_cls):
+    """Generates the column_filters list for a given Gift/GiftArchive model."""
+    return [
+        'child_id',
+        'child.age',
+        'create_date',
+        'received',
+        FilterCaseLike(child_model_cls.first_name, 'Child First Name'),
+        FilterCaseLike(child_model_cls.last_name, 'Child Last Name'),
+        'child.gender.gender'
+    ]
+
+def get_child_filters(model_cls, sponsor_cls, parent_cls):
+    """Generates the column_filters list for a given Child/ChildArchive model."""
+    return [
+        'child_id',
+        'age',
+        # BooleanEqualFilter(Child.has_sponsor, 'Sponsored'),
+        BooleanFilter(model_cls.has_sponsor, 'Sponsored'),
+        FilterCaseLike(model_cls.interests, 'Child Interests'),
+        FilterCaseLike(sponsor_cls.last_name, 'Sponsor Last Name'),
+        FilterCaseLike(sponsor_cls.first_name, 'Sponsor First Name'),
+        FilterCaseLike(parent_cls.last_name, 'Parent Last Name'),
+        FilterCaseLike(parent_cls.first_name, 'Parent First Name'),
+        FilterCaseLike('dhs_case_worker', 'Case Worker'),
+        FilterCaseLike(model_cls.first_name, 'Child First Name'),
+        FilterCaseLike(model_cls.last_name, 'Child Last Name'),
+        FilterEqual(DhsOffice.office, 'DHS Office', options=get_dhs_office_options),
+        FilterEqual(Race.race, 'Child Race', options=get_race_options),
+        FilterEqual(Gender.gender, 'Child Gender', options=get_gender_options),
+        FilterEqual(ShoeSize.size, 'Shoe Size', options=get_shoe_size_options),
+        FilterEqual(ClothingSize.size, 'Clothing Size', options=get_clothing_size_options),
+        FilterEqual(FavColor.color, 'Favorite Color', options=get_fav_color_options),
+        FilterEqual(Church.church, 'Assigned Church', options=get_church_options)
+    ]
+
+def get_gift_fulfillment_filters(model_cls, child_model_cls):
+    """Generates the column_filters list for a given Gift/GiftArchive model."""
+    return [
+        'child_id',
+        FilterCaseLike(child_model_cls.first_name, 'Child First Name'),
+        FilterCaseLike(child_model_cls.last_name, 'Child Last Name'),
+        'is_received',
+        'is_pickup',
+        'received_date',
+        'pickup_date',
+    ]
+
 class QuerySelectFilter(BaseSQLAFilter):
 
     def __init__(self, column, name, options=None, data_type=None):
@@ -114,8 +186,14 @@ class FilterCaseLike(BaseSQLAFilter):
             value = value.lower()
 
         stmt = tools.parse_like_term(value)
-        print(self.get_column(alias))
         return query.filter(self.get_column(alias).ilike(stmt))
 
     def operation(self):
         return lazy_gettext('contains')
+
+class BooleanFilter(BooleanEqualFilter):
+    def apply(self, query, value, alias=None):
+        return query.filter(self.get_column(alias) == int(value))
+
+    def operation(self):
+        return lazy_gettext('equals')

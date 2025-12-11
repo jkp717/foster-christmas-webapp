@@ -13,10 +13,14 @@
 <h1 class="display-title">How to get involved</h1>
 <hr class="my-12"/>
 <ul class="list-style-circle">
+   <li class="list-item">
+    Host a Holiday Hope Tree by emailing <a href="mailto: {{ config['CONTACT_EMAIL'] }}"> {{ config['CONTACT_EMAIL'] }}</a>.
+  </li>
   <li class="list-item">
-    The best way to donate monetarily is to send e-gift cards!
-    This helps purchase gifts for kids that come into care right before Christmas.  Walmart, Amazon and Target are great examples.
-    Please email E-Gift Cards to <a href="mailto: {{ config['CONTACT_EMAIL'] }}"> {{ config['CONTACT_EMAIL'] }}</a>.
+    Click <a href="{{ get_url('register.sponsor_request') }}">HERE</a> to sponsor a foster child’s wishlist.
+  </li>
+  <li class="list-item">
+    Gift cards! This helps purchase gifts for kids that come into care right before Christmas. Walmart, Amazon and Target are great examples. Please email E-Gift Cards to <a href="mailto: {{ config['CONTACT_EMAIL'] }}"> {{ config['CONTACT_EMAIL'] }}</a>.
   </li>
   <li class="list-item">
     We have created an Amazon wish list of popular items!  These will ship directly to the church where foster families will be receiving their Christmas gifts.
@@ -26,20 +30,17 @@
     Give monetarily through The CALL <a href="https://igfn.us/form/tEmO0w">HERE</a>
   </li>-->
   <li class="list-item">
-    Host a Holiday Hope Tree by emailing <a href="mailto: {{ config['CONTACT_EMAIL'] }}"> {{ config['CONTACT_EMAIL'] }}</a>.
-  </li>
-  <li class="list-item">
-    Click <a href="{{ get_url('register.sponsor_request') }}">HERE</a> to sponsor a foster child’s wishlist.
-  </li>
-  <li class="list-item">
     Your church or business could host a toy drive!
   </li>
   <li class="list-item">
-    Your church or business could hold a gift card drive for teens that have aged out of foster care (aged 19-21).
+    Your church or business could hold a gift card drive for teens that have aged out of foster care (aged 18-21).
   </li>
   <li class="list-item">
     Volunteer!  We will need so much help the week of this event to receive and sort all gifts.
     Please register to volunteer <a href="{{ config['VOLUNTEER_LINK'] }}">HERE</a>.
+  </li>
+  <li class="list-item">
+    Sponsorships!  Email us for more info on sponsorships through our 504c3
   </li>
 </ul>
 {% endblock %}

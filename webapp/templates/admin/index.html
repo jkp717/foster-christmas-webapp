@@ -1,7 +1,7 @@
 {% extends 'admin/base.html' %}
 
 {% block body %}
-<div class="container">
+<div class="container-fluid">
   <h3>Download Reports</h3>
   <div class="list-group">
     <a href="{{ get_url('gift.export', export_type='csv') }}" class="list-group-item list-group-item-action flex-column align-items-start">

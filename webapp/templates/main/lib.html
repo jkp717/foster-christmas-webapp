@@ -196,3 +196,20 @@
   <input name="_continue_editing" type="submit" class="btn btn-secondary" value="{{ _gettext('Save and Continue Editing') }}" />
   {% endif %}
 {% endmacro %}
+
+{% macro render_dropoff_locations(cfg) %}
+    <div class="details-sub-list">
+      <h5>You have the choice of {{ cfg['GIFT_DROPOFF_LOCATIONS']|length }} drop off locations:</h5>
+      <ul class="list-style-circle">
+        {% for loc in cfg['GIFT_DROPOFF_LOCATIONS'] %}
+        <li class="list-item">
+          <div>{{ loc['LOCATION'] }}</div>
+          <div>{{ loc['DATETIME'] }}</div>
+          {% if loc['ADDITIONAL_INSTRUCTIONS'] %}
+          <div>{{ loc['ADDITIONAL_INSTRUCTIONS'] }}</div>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+{% endmacro %}

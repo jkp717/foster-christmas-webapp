@@ -1,19 +1,20 @@
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 from flask import flash, request, redirect
 from markupsafe import Markup
 from flask_admin import expose, BaseView, AdminIndexView
 from flask_admin.actions import action
 from flask_admin.babel import ngettext
 from flask_admin.model.helpers import get_mdict_item_or_list
-from flask_admin.contrib.sqla import ModelView
+from flask_admin.contrib.sqla.view import ModelView
+from flask_admin.model.template import TemplateLinkRowAction
 from flask_admin.babel import gettext
 from flask_admin.form import rules, FormOpts
 from wtforms_alchemy import PhoneNumberField
 from wtforms.widgets import TelInput
-from flask_admin.contrib.sqla.filters import FilterEqual, BooleanEqualFilter
 
 from webapp.models import db, Gift, Child, Parent, DhsOffice, Gender, Race, ShoeSize, ClothingSize, FavColor, \
-    Church, Sponsor, SponsorRequest
+    Church, Sponsor, SponsorRequest, ParentArchive, SponsorArchive, ChildArchive, GiftArchive, GiftFulfillment
 import webapp.util as util
 from webapp.config import GIFT_DELIVERY_DISCLAIMER, REGISTER_CHILD_DISCLAIMER, SPONSORSHIP_DISCLAIMER, \
     SPONSOR_CHILD_DISCLAIMER, SPONSOR_REQUEST_DISCLAIMER, CHILD_REGISTRY_HELPER_TEXT
@@ -30,12 +31,35 @@ class IndexView(AdminIndexView):
             'main/index.html',
         )
 
+    @expose('/about-us')
+    def about_us(self):
+        return self.render(
+            'main/about-us.html',
+        )
+
+    @expose('/privacy-policy')
+    def privacy_policy(self):
+        return self.render(
+            'main/privacy-policy.html',
+        )
 
 class RegisterView(BaseView):
     can_create = True  # Sets if 'add another' option is present
     _raised_integrity_error = False  # flag if unique constraint fails
 
     def handle_integrity_error(self, exc):
+        self._raised_integrity_error = False
+        if isinstance(exc, IntegrityError):
+            self._raised_integrity_error = True
+            flash(
+                gettext("Error occurred while processing your request! Try again shortly."),
+                "error",
+            )
+            return True
+        return False
+
+    def skip_integrity_error(self, exc):
+        self._raised_integrity_error = False
         if isinstance(exc, IntegrityError):
             self._raised_integrity_error = True
             return True
@@ -72,7 +96,7 @@ class RegisterView(BaseView):
                 form_rules=model_view._form_create_rules  # noqa
             )
             if model_view.validate_form(form):
-                model_view.handle_view_exception = self.handle_integrity_error
+                model_view.handle_view_exception = self.skip_integrity_error
                 model = model_view.create_model(form)
                 if self._raised_integrity_error:
                     model = db.session.query(Parent).filter(
@@ -83,7 +107,9 @@ class RegisterView(BaseView):
                 if model:
                     # flash(gettext('Your information has been saved! '), 'success')
                     return redirect(self.get_url('register.child', parent_id=model.id))
-        validation_attrs = ["required", "disabled", "readonly", "maxlength", "minlength", "pattern",]
+                else:
+                    flash(gettext('An error occurred while processing your request. Please try again!'), 'error')
+        # validation_attrs = ["required", "disabled", "readonly", "maxlength", "minlength", "pattern",]
         # setattr(form.phone.widget, 'validation_attrs', validation_attrs)
         return self.render(
             'main/register.html',
@@ -144,7 +170,8 @@ class RegisterView(BaseView):
                         return redirect(self.get_url('register.child', parent_id=parent_id))
                     flash("Your children have been registered! Thank you!")
                     return redirect('/')
-        flash(Markup(Markup(REGISTER_CHILD_DISCLAIMER)))
+            else:
+                flash(Markup(Markup(REGISTER_CHILD_DISCLAIMER)))
         return self.render(
             'main/register.html',
             form=form,
@@ -185,15 +212,26 @@ class RegisterView(BaseView):
                 form_rules=model_view._form_create_rules  # noqa
             )
             if model_view.validate_form(form):
-                model_view.handle_view_exception = self.handle_integrity_error
+                model_view.handle_view_exception = self.skip_integrity_error
                 model = model_view.create_model(form)
+                if self._raised_integrity_error:
+                    # Match all columns in _sponsor_uc constraint
+                    model = db.session.query(Sponsor).filter(
+                        Sponsor.first_name == form.first_name.data.title(),
+                        Sponsor.last_name == form.last_name.data.title(),
+                        Sponsor.email == form.email.data.lower(),
+                    ).first()
+                    for child in form.children.data:
+                        child.sponsor_id = model.id
+                    db.session.commit()
                 if model:
                     flash(gettext('Thank you for your sponsorship!'), 'success')
                     return redirect('/')
                 else:
                     if request.method == 'GET' or form.errors:
                         model_view.on_form_prefill(form, id)
-        flash(Markup(Markup(SPONSORSHIP_DISCLAIMER)))
+            else:
+                flash(Markup(Markup(SPONSORSHIP_DISCLAIMER)))
         return self.render(
             'main/sponsor.html',
             form=form,
@@ -258,6 +296,7 @@ class AdminReportsView(AdminIndexView):
 
 
 class BaseView(ModelView):
+    page_size = 50
     column_type_formatters = util.DEFAULT_FORMATTERS
     form_excluded_columns = ['create_date', 'modify_date']
     column_exclude_list = form_excluded_columns
@@ -273,55 +312,39 @@ class BaseView(ModelView):
 
 
 class ChildView(BaseView):
+    list_template = 'admin/child-list.html'
     column_list = [
-        'id', 'parent', 'first_name', 'last_name', 'dhs_office', 'age', 'dhs_case_worker', 'gender',
+        'child_id', 'parent', 'first_name', 'last_name', 'dhs_office', 'age', 'dhs_case_worker', 'gender',
         'sponsor_name', 'gifts', 'church', 'note'
     ]
     column_export_list = [
-        'id', 'parent', 'parent.phone', 'parent.email', 'first_name', 'last_name', 'dhs_office', 'age',
-        'dhs_case_worker', 'gender', 'sponsor_name', 'gifts', 'church', 'note'
+        'child_id', 'parent', 'parent.phone', 'parent.email', 'first_name', 'last_name', 'dhs_office', 'age',
+        'dhs_case_worker', 'gender', 'sponsor_name', 'gifts', 'church', 'interests', 'note'
     ]
     form_exclude_columns = [
-        'id', 'church', 'note', 'sponsor_name', 'parent.phone', 'parent.email'
+        'id', 'is_split', 'child_id', 'church', 'note', 'sponsor_name', 'parent.phone', 'parent.email'
     ]
-    column_editable_list = ['church', 'note']
+    column_editable_list = ['child_id', 'church', 'note']
     column_descriptions = {
         "church": "Church given child's gift registration (if applicable)",
         "sponsor_name": "Sponsor assigned to this child",
         "gifts": "Count of gifts registered (click link to see gifts)",
-        
+        "interests": "favorite character, interests, or hobbies"
     }
+    column_default_sort =  'numeric_sort_child_id'
     column_sortable_list = [
-        ('parent', 'parent.last_name'), 'first_name', 'last_name', 'dhs_case_worker',
-        ('dhs_office', 'dhs_office.office'), 'age', ('race', 'race.race'), ('gender', 'gender.gender'),
+        ('child_id', ('numeric_sort_child_id',)), ('parent', 'parent.last_name'), 'first_name', 'last_name',
+        'dhs_case_worker', ('dhs_office', 'dhs_office.office'), 'age', ('race', 'race.race'), ('gender', 'gender.gender'),
         ('fav_color', 'fav_color.color'), ('shoe_size', 'shoe_size.size'), ('clothing_size', 'clothing_size.size'),
         ('church', 'church.church'), ('sponsor', 'sponsor.last_name')
     ]
-    column_filters = [
-        'id',
-        'age',
-        BooleanEqualFilter('has_sponsor', 'Sponsored'),
-        util.FilterCaseLike(Sponsor.last_name, 'Sponsor Last Name'),
-        util.FilterCaseLike(Sponsor.first_name, 'Sponsor First Name'),
-        util.FilterCaseLike(Parent.last_name, 'Parent Last Name'),
-        util.FilterCaseLike(Parent.first_name, 'Parent First Name'),
-        util.FilterCaseLike('dhs_case_worker', 'Case Worker'),
-        util.FilterCaseLike(Child.first_name, 'Child First Name'),
-        util.FilterCaseLike(Child.last_name, 'Child Last Name'),
-        FilterEqual(DhsOffice.office, 'DHS Office', options=util.get_dhs_office_options),
-        FilterEqual(Race.race, 'Child Race', options=util.get_race_options),
-        FilterEqual(Gender.gender, 'Child Gender', options=util.get_gender_options),
-        FilterEqual(ShoeSize.size, 'Shoe Size', options=util.get_shoe_size_options),
-        FilterEqual(ClothingSize.size, 'Clothing Size', options=util.get_clothing_size_options),
-        FilterEqual(FavColor.color, 'Favorite Color', options=util.get_fav_color_options),
-        FilterEqual(Church.church, 'Assigned Church', options=util.get_church_options)
-    ]
-    column_searchable_list = [Gift.gift]
+    column_filters = util.get_child_filters(Child, Sponsor, Parent)
+    column_searchable_list = (Gift.gift, 'interests')
     form_rules = [
         rules.NestedRule([rules.Header('Foster Parent'), 'parent', rules.Macro('render_child_list')]),
         rules.NestedRule([
             rules.Header('Add Foster Child'), 'first_name', 'last_name', 'dhs_case_worker',
-            'dhs_office', 'age', 'race', 'gender', 'fav_color', 'shoe_size', 'clothing_size'
+            'dhs_office', 'age', 'race', 'gender', 'fav_color', 'shoe_size', 'clothing_size', 'interests'
         ]),
         rules.NestedRule([
             'gifts',
@@ -339,20 +362,89 @@ class ChildView(BaseView):
         'sponsor_name': 'Sponsor'
     }
     column_formatters = {
-        'gifts': util.gift_list_formatter
+        'gifts': util.gift_list_formatter,
+        'child_id': util.child_id_formatter
     }
     column_formatters_export = {
         'gifts': util.gift_list_export_formatter
     }
+    column_extra_row_actions = [
+        TemplateLinkRowAction(
+            template_name='custom_row_actions.split_gifts_action',
+        )
+    ]
+
+    def get_query(self):
+        query = super().get_query()
+        return query.options(joinedload(self.model.gifts), joinedload(self.model.sponsor))
 
     @expose('/')
     def index_view(self):
         self._refresh_filters_cache()
-        return super(ChildView, self).index_view()
+        return super().index_view()
+
+    @expose('/split', methods=['GET', 'POST'])
+    def split_gifts(self):
+        child_id = request.args.get('id')
+        child_model_view = ChildView(Child, db.session)
+        gift_model_view = BaseView(Gift, db.session)
+        child = child_model_view.get_one(child_id)
+
+        if request.method == 'POST':
+            og_id = child.child_id
+            selected_ids = request.form.getlist('rowid')
+
+            left_gifts = db.session.query(Gift).filter(Gift.child_id == og_id, db.not_(Gift.id.in_(selected_ids))).all()
+            split_gifts = db.session.query(Gift).filter(Gift.child_id == og_id, Gift.id.in_(selected_ids)).all()
+
+            a_id = f"{og_id}A"
+            b_id = f"{og_id}B"
+
+            child.child_id = a_id
+            child.is_split = True
+            for gift in left_gifts:
+                gift.child_id = a_id
+
+            cpy = {k: v for k, v in child.__dict__.items() if k not in ('_sa_instance_state', 'id')}
+
+            new_child = Child(**cpy)
+            new_child.child_id = b_id
+            new_child.is_split = True
+            for gift in split_gifts:
+                gift.child_id = b_id
+
+            db.session.add(new_child)
+            db.session.commit()
+            return redirect(self.get_url('.index_view'))
+
+        return self.render(
+            'admin/split-gifts.html',
+            data=child.gifts,
+            count=len(child.gifts),
+            list_columns=(('gift', 'Gift'),),
+            get_pk_value=gift_model_view.get_pk_value,
+            get_value=gift_model_view.get_list_value,
+            return_url=self.get_url('.index_view'),
+        )
+
+
+class ChildArchiveView(ChildView):
+    can_edit = False
+    column_list = ChildView.column_list + ['year']
+    column_export_list = ChildView.column_export_list + ['year']
+    column_filters =  util.get_child_filters(ChildArchive, SponsorArchive, ParentArchive)
+    column_searchable_list = [GiftArchive.gift]
+    inline_models = [(GiftArchive, dict(form_columns=['id', 'gift']))]
+    column_formatters = None
+    column_formatters_export = None
+    column_extra_row_actions = None
+    # To remove the custom page, override the method and set it to None
+    split_gifts = None
 
 
 class ParentView(BaseView):
     form_columns = ['first_name', 'last_name', 'email', 'phone', 'gift_delivery']
+    # noinspection PyTypeChecker
     form_rules = {
         rules.NestedRule([
             rules.NestedRule(
@@ -364,12 +456,7 @@ class ParentView(BaseView):
             )
         ])
     }
-    column_filters = [
-        BooleanEqualFilter(Parent.gift_delivery, 'DHS Gift Delivery'),
-        util.FilterCaseLike(Parent.last_name, 'Last Name'),
-        util.FilterCaseLike(Parent.first_name, 'First Name'),
-        util.FilterCaseLike(Parent.email, 'Email'),
-    ]
+    column_filters = util.get_parent_filters(Parent)
     column_labels = {
         'gift_delivery': 'DHS Delivery'
     }
@@ -378,32 +465,51 @@ class ParentView(BaseView):
     }
 
 
+class ParentArchiveView(ParentView):
+    can_edit = False
+    column_filters = util.get_parent_filters(ParentArchive)
+
+
 class GiftView(BaseView):
+    # Setup relational model variables
+    CHILD_MODEL = Child
     column_display_pk = True
-    column_filters = ['child_id', 'child', 'create_date', 'received']
+    column_filters = util.get_gift_filters(Gift, CHILD_MODEL)
     column_searchable_list = ['gift']
-    column_sortable_list = {('child', 'child.last_name'), 'create_date', 'gift', 'received'}
-    column_list = ('id', 'gift.create_date', 'child', 'received', 'gift')
+    column_sortable_list = {
+        ('child', 'child.last_name'), 'create_date', 'gift', 'received', ('child', 'child.sponsor_name'), 'id'
+    }
+    column_list = ['id', 'create_date', 'child', 'received', 'gift']
     column_export_list = [
-        'child_id', 'child.last_name', 'child.first_name', 'child.age', 'child.gender', 'gift', 'child.sponsor',
+        'child_id', 'child.last_name', 'child.first_name', 'child.age', 'child.gender', 'gift', 'child.sponsor_name',
         'received', 'create_date'
     ]
+    column_details_list = column_list + ['child.sponsor_name',]
     column_labels = {
+        'id': 'Gift Id',
         'child.last_name': 'Child Last',
         'child.first_name': 'Child First',
         'child.age': 'Age',
         'child.fav_color': 'Fav Color',
         'child.shoe_size': 'Shoe Size',
         'child.clothing_size': 'Clothing Size',
-        'child.gender': 'Gender',
-        'child.sponsor': 'Sponsor',
+        'child.gender.gender': 'Gender',
+        'child.sponsor_name': 'Sponsor',
         'create_date': 'Registered Date'
     }
+
+    def get_query(self):
+        query = super().get_query()
+        return query.options(
+            joinedload(self.model.child).joinedload(self.CHILD_MODEL.gender),
+            joinedload(self.model.child).joinedload(self.CHILD_MODEL.sponsor),
+            joinedload(self.model.child).joinedload(self.CHILD_MODEL.fav_color)
+        ).distinct()
 
     @action('receive_gift', 'Mark as Received', 'Marking all selected gifts as received. Continue?')
     def receive_gift(self, ids):
         try:
-            query = db.session.query(Gift).filter(Gift.id.in_(ids))
+            query = db.session.query(self.model).filter(self.model.id.in_(ids))
             count = 0
             for gift in query.all():
                 gift.received = True
@@ -418,12 +524,20 @@ class GiftView(BaseView):
             flash(gettext('Failed to update received status on gifts. %(error)s', error=str(ex)), 'error')
 
 
+class GiftArchiveView(GiftView):
+    can_edit = False
+    CHILD_MODEL = ChildArchive
+    column_filters = util.get_gift_filters(GiftArchive, CHILD_MODEL)
+    receive_gift = None
+
+
 class SponsorView(BaseView):
     form_columns = ['first_name', 'last_name', 'phone', 'email', 'children']
     column_formatters = {'children': util.sponsor_children_formatter}
     form_overrides = {
-        'phone': PhoneNumberField,
+        'phone': PhoneNumberField2,
     }
+    # noinspection PyTypeChecker
     form_rules = {
         rules.NestedRule([
             rules.NestedRule(
@@ -443,6 +557,7 @@ class SponsorRequestView(BaseView):
         'phone': PhoneNumberField,
     }
     column_labels = {'request_count': "Wishlists Requested"}
+    # noinspection PyTypeChecker
     form_rules = {
         rules.NestedRule([
             rules.NestedRule(
@@ -454,7 +569,33 @@ class SponsorRequestView(BaseView):
     }
 
 
+class GiftFulfillmentView(BaseView):
+    can_edit = True
+    can_create = False
+    can_delete = False
+    column_display_actions = False
+    # extra_js = ['/static/js/list-refresh.js']
+    list_template = 'admin/list-refresh.html'
+    column_list = [
+        'child_id', 'child.last_name', 'child.first_name', 'is_received', 'received_date', 'is_pickup', 'pickup_date'
+    ]
+    column_editable_list = ['is_pickup', 'is_received']
+    column_labels = {
+        "is_pickup": "Picked Up",
+        "is_received": "Gifts Received",
+        "child.first_name": "First Name",
+        "child.last_name": "Last Name"
+    }
+    column_sortable_list = [
+        ('child_id', ('child.numeric_sort_child_id',)), 'child.first_name', 'child.last_name', 'is_received',
+        'received_date', 'is_pickup', 'pickup_date'
+    ]
+    column_filters = util.get_gift_fulfillment_filters(GiftFulfillment, Child)
+    column_formatters = {
+        'received_date': util.datetime_formatter,
+        'pickup_date': util.datetime_formatter,
+    }
+
+
 class MiscView(BaseView):
     column_display_pk = True
-
-
