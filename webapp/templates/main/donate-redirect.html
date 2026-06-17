@@ -1,0 +1,26 @@
+{% extends 'main/base.html' %}
+
+{% block page_container %}
+<div class="donate-wrap">
+  <div class="donate-card" style="text-align:center;">
+    <div class="donate-title" style="font-size:1.6rem;">Redirecting to secure payment…</div>
+    <p class="donate-subtitle" style="margin-top:14px;">
+      Please wait while we send you to Authorize.Net's secure payment form.
+      If you are not redirected automatically, click the button below.
+    </p>
+
+    {# Auto-submitting form: posts the one-time token to the hosted form. #}
+    <form id="authnet-hosted-form" method="post" action="{{ form_action }}">
+      <input type="hidden" name="token" value="{{ token }}" />
+      <button type="submit" class="donate-submit" style="margin-top:18px;">
+        Continue to Payment
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Submit as soon as the page loads so the donor is forwarded seamlessly.
+  document.getElementById('authnet-hosted-form').submit();
+</script>
+{% endblock %}

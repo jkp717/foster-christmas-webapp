@@ -8,11 +8,83 @@ from markupsafe import Markup
 FACEBOOK_URL = "https://www.facebook.com/profile.php?id=61561174376000"
 AMAZON_WISHLIST = "https://www.amazon.com/registries/gl/guest-view/3FC1SM55DD3KA?ref=gr_search_page_result"
 VOLUNTEER_LINK = "https://signup.com/client/invitation2/0bfd78f34abc02061c408255735b7620aae22954/5457541/false?popup=true&amp;preview=true&amp;return=%2FActivities%23%2F5457541%2Fthemes&amp;theme=winter#/invitation"  # noqa
-DONATE_BUTTON_HTML = Markup("""
-      <form class="nav-item nav-link nav-form" name="PrePage" method="post" action="https://Simplecheckout.authorize.net/payment/CatalogPayment.aspx">
-        <input type="hidden" name="LinkId" value="fcf83d4e-ba93-483c-9217-34cd71e93ebf" />
-        <input class="nav-form-submit" type="submit" value="Donate" />
-      </form>
+# ---------------------------------------------------------------------------
+# Donation settings
+# ---------------------------------------------------------------------------
+# The "Donate" item in the top navigation now links to the on-site /donate
+# page (see DONATE_NAV_HTML below) instead of posting directly to a single
+# payment processor. The donate page lets the donor pick an amount and then
+# choose between PayPal and Authorize.Net.
+#
+# Authorize.Net (Accept Hosted):
+#   We use Accept Hosted so the amount the donor selects on our /donate page is
+#   carried straight through to Authorize.Net's secure, PCI-compliant payment
+#   form (no second amount selection). The flow is:
+#     1. Our server calls getHostedPaymentPageRequest with the chosen amount and
+#        receives a one-time form token (valid 15 minutes).
+#     2. The donor's browser auto-POSTs that token to AUTHNET_HOSTED_FORM_URL,
+#        which displays the hosted form.
+#     3. After paying, the donor is returned to AUTHNET_RETURN_URL.
+#
+#   Credentials come from the Merchant Interface:
+#     Account > Security Settings > General Security Settings >
+#       API Credentials & Keys  (API Login ID + a new Transaction Key)
+#   Put them in environment variables in production rather than hard-coding:
+#     export AUTHNET_API_LOGIN_ID=...     export AUTHNET_TRANSACTION_KEY=...
+#
+#   Set AUTHNET_SANDBOX = True while testing with sandbox credentials, then flip
+#   to False (and use live credentials) to go live.
+import os  # noqa: E402
+
+AUTHNET_API_LOGIN_ID = os.environ.get("AUTHNET_API_LOGIN_ID", "")
+AUTHNET_TRANSACTION_KEY = os.environ.get("AUTHNET_TRANSACTION_KEY", "")
+AUTHNET_SANDBOX = os.environ.get("AUTHNET_SANDBOX", "true").lower() in ("1", "true", "yes")
+
+# API endpoint (where our server requests the form token) and the hosted-form
+# endpoint (where the browser is sent). These switch automatically with sandbox.
+if AUTHNET_SANDBOX:
+    AUTHNET_API_URL = "https://apitest.authorize.net/xml/v1/request.api"
+    AUTHNET_HOSTED_FORM_URL = "https://test.authorize.net/payment/payment"
+else:
+    AUTHNET_API_URL = "https://api.authorize.net/xml/v1/request.api"
+    AUTHNET_HOSTED_FORM_URL = "https://accept.authorize.net/payment/payment"
+
+# Where Authorize.Net returns the donor after the hosted form. Leave the path
+# as-is; the scheme+host is taken from the incoming request at runtime so it
+# works on localhost and in production without editing.
+AUTHNET_RETURN_PATH = "/donate/thank-you"
+AUTHNET_CANCEL_PATH = "/donate"
+
+# Text shown on the hosted form / receipt.
+AUTHNET_ORDER_DESCRIPTION = "Holiday Hope Tree Donation"
+
+# --- Legacy Simple Checkout (kept for reference / quick rollback) ------------
+# The old navbar button posted to this hosted catalog page using a fixed
+# LinkId. Accept Hosted replaces it. To revert, point the donate page's
+# Authorize.Net path back at these values.
+# AUTHNET_PAYMENT_URL = "https://Simplecheckout.authorize.net/payment/CatalogPayment.aspx"
+# AUTHNET_LINK_ID = "fcf83d4e-ba93-483c-9217-34cd71e93ebf"
+
+# PayPal (hosted donate flow):
+#   Easiest setup is a PayPal "Donate" hosted button. Create one at
+#   https://www.paypal.com/donate/buttons and paste its hosted_button_id below.
+#   With a hosted button id, PayPal renders its own amount screen, so the
+#   amount the donor selects on our page is passed along as a suggestion.
+#
+#   Alternatively, set PAYPAL_BUSINESS to the PayPal account email to use the
+#   classic _donations flow (no hosted button id required). Leave
+#   PAYPAL_HOSTED_BUTTON_ID empty in that case.
+PAYPAL_PAYMENT_URL = "https://www.paypal.com/donate"
+PAYPAL_HOSTED_BUTTON_ID = ""          # e.g. "ABC123XYZ456" (preferred)
+PAYPAL_BUSINESS = "holidayhopetreepulaski@gmail.com"  # fallback if no button id
+PAYPAL_CURRENCY = "USD"
+
+# Suggested donation amounts (in whole dollars) shown as quick-pick buttons.
+DONATION_PRESET_AMOUNTS = [25, 50, 100, 250]
+
+# Navbar entry – now just a link to the on-site donate page.
+DONATE_NAV_HTML = Markup("""
+      <a class="nav-item nav-link" href="/donate">Donate</a>
     """)
 
 # Main contact info

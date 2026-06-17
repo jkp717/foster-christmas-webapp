@@ -50,11 +50,20 @@
 {% endblock %}
 
 {% block page_container %}
+<section class="page-shell">
+  <div class="wrap" style="max-width: 760px;">
+    <div class="page-head">
+      <span class="eyebrow">Foster Family</span>
+      <h1 class="page-title">Register a child</h1>
+      <p class="page-intro">Add your information, then add each child and their wishlist.</p>
+    </div>
     {% if add_another %}
     {{ lib.render_form(form, return_url, form_opts=form_opts, submit_text=submit_text, extra=extra()) }}
     {% else %}
     {{ lib.render_form(form, return_url, form_opts=form_opts, submit_text=submit_text) }}
     {% endif %}
+  </div>
+</section>
 {% endblock %}
 
 {% block modal %}

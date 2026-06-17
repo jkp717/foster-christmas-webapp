@@ -1,6 +1,6 @@
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
-from flask import flash, request, redirect
+from flask import flash, request, redirect, current_app, url_for
 from markupsafe import Markup
 from flask_admin import expose, BaseView, AdminIndexView
 from flask_admin.actions import action
@@ -16,6 +16,7 @@ from wtforms.widgets import TelInput
 from webapp.models import db, Gift, Child, Parent, DhsOffice, Gender, Race, ShoeSize, ClothingSize, FavColor, \
     Church, Sponsor, SponsorRequest, ParentArchive, SponsorArchive, ChildArchive, GiftArchive, GiftFulfillment
 import webapp.util as util
+import webapp.authnet as authnet
 from webapp.config import GIFT_DELIVERY_DISCLAIMER, REGISTER_CHILD_DISCLAIMER, SPONSORSHIP_DISCLAIMER, \
     SPONSOR_CHILD_DISCLAIMER, SPONSOR_REQUEST_DISCLAIMER, CHILD_REGISTRY_HELPER_TEXT
 
@@ -41,6 +42,56 @@ class IndexView(AdminIndexView):
     def privacy_policy(self):
         return self.render(
             'main/privacy-policy.html',
+        )
+
+    @expose('/donate')
+    def donate(self):
+        return self.render(
+            'main/donate.html',
+        )
+
+    @expose('/donate/authnet', methods=['POST'])
+    def donate_authnet(self):
+        """
+        Request an Accept Hosted form token for the chosen amount, then render
+        a page that auto-POSTs the token to Authorize.Net's hosted form. The
+        amount is fixed here on the server, so it carries through unchanged.
+        """
+        cfg = current_app.config
+        amount = request.form.get('amount')
+
+        # Build absolute return/cancel URLs from the live request host so this
+        # works on localhost and in production with no config edits.
+        return_url = request.url_root.rstrip('/') + cfg['AUTHNET_RETURN_PATH']
+        cancel_url = request.url_root.rstrip('/') + cfg['AUTHNET_CANCEL_PATH']
+
+        try:
+            token = authnet.get_form_token(
+                api_login_id=cfg['AUTHNET_API_LOGIN_ID'],
+                transaction_key=cfg['AUTHNET_TRANSACTION_KEY'],
+                api_url=cfg['AUTHNET_API_URL'],
+                amount=amount,
+                return_url=return_url,
+                cancel_url=cancel_url,
+                order_description=cfg['AUTHNET_ORDER_DESCRIPTION'],
+            )
+        except authnet.AuthnetError as exc:
+            flash(gettext(
+                'We were unable to start the card payment (%(err)s). '
+                'Please try again, or use PayPal.', err=str(exc)
+            ), 'error')
+            return redirect('/donate')
+
+        return self.render(
+            'main/donate-redirect.html',
+            form_action=cfg['AUTHNET_HOSTED_FORM_URL'],
+            token=token,
+        )
+
+    @expose('/donate/thank-you')
+    def donate_thank_you(self):
+        return self.render(
+            'main/donate-thank-you.html',
         )
 
 class RegisterView(BaseView):

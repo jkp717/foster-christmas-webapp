@@ -10,7 +10,16 @@
 {% endblock %}
 
 {% block page_container %}
+<section class="page-shell">
+  <div class="wrap" style="max-width: 760px;">
+    <div class="page-head">
+      <span class="eyebrow">Sponsor a Wishlist</span>
+      <h1 class="page-title">Request a wishlist</h1>
+      <p class="page-intro">Tell us a little about you and how many children you'd like to sponsor.</p>
+    </div>
     {{ lib.render_form(form, return_url, form_opts=form_opts) }}
+  </div>
+</section>
 {% endblock %}
 
 {% block tail %}

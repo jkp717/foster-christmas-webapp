@@ -10,44 +10,33 @@
 {% endblock %}
 
 {% block page_container %}
-<div class="row">
-  <div class="col" style="margin-bottom: 50px;">
-    <h1 class="display-title">Foster Parents</h1>
-    <hr class="my-12"/>
+<section class="page-shell">
+  <div class="wrap">
+    <div class="page-head">
+      <span class="eyebrow">Good to Know</span>
+      <h1 class="page-title">Details &amp; logistics</h1>
+    </div>
+
+    <h2 class="section-title" style="font-size:2rem; margin-bottom:0.5rem;">For foster parents</h2>
+    <div class="filigree-divider"></div>
     <ul class="list-style-circle">
-      <li class="list-item">
-        This website is for children based out of Pulaski County DHS only.  If you live outside of Pulaski but your child is from a Pulaski County office you will still register here.
-      </li>
-      <li class="list-item">
-        If you live in Pulaski county and have a child from another county please contact your case-worker from that county about how they are handling Christmas, every county is a little different.
-      </li>
-      <li class="list-item">
-        Gift pick up will be at {{ config['GIFT_PICKUP_LOCATION'] }} on {{ config['GIFT_PICKUP_DATETIME'] }}.  We would love to meet you and thank you in person
-        but if this time absolutely does not work, please make sure to click the box “Will need DHS to deliver” when registering your child so that we can get that arranged for you.
-      </li>
-      <li class="list-item">
-          Deadline for the child’s wish lists is {{ config['CHILD_SIGNUP_DEADLINE'] }}.
-          After that date the foster child will be given age appropriate gifts or you may have the opportunity to shop donated gifts.
-          Please reach out to {{ config['CONTACT_NAME'] }} at <a href="mailto: {{ config['CONTACT_EMAIL'] }}"> {{ config['CONTACT_EMAIL'] }}</a> for more info.
-      </li>
+      <li class="list-item">This website is for children based out of Pulaski County DHS only. If you live outside of Pulaski but your child is from a Pulaski County office you will still register here.</li>
+      <li class="list-item">If you live in Pulaski county and have a child from another county please contact your case-worker from that county about how they are handling Christmas, every county is a little different.</li>
+      <li class="list-item">Gift pick up will be at {{ config['GIFT_PICKUP_LOCATION'] }} on {{ config['GIFT_PICKUP_DATETIME'] }}. We would love to meet you and thank you in person but if this time absolutely does not work, please make sure to click the box “Will need DHS to deliver” when registering your child so that we can get that arranged for you.</li>
+      <li class="list-item">Deadline for the child’s wish lists is {{ config['CHILD_SIGNUP_DEADLINE'] }}. After that date the foster child will be given age appropriate gifts or you may have the opportunity to shop donated gifts. Please reach out to {{ config['CONTACT_NAME'] }} at <a href="mailto:{{ config['CONTACT_EMAIL'] }}">{{ config['CONTACT_EMAIL'] }}</a> for more info.</li>
     </ul>
-  </div>
-</div>
-<div class="row">
-  <div class="col">
-    <h1 class="display-title">Donors</h1>
-    <hr class="my-12"/>
+
+    <h2 class="section-title" style="font-size:2rem; margin:3rem 0 0.5rem;">For donors</h2>
+    <div class="filigree-divider"></div>
     {{ lib.render_dropoff_locations(config) }}
     <div class="details-sub-list">
-      <h5>If you chose a list off of a Holiday Hope Tree from our church Partners:</h5>
+      <h5>If you chose a list off of a Holiday Hope Tree from our church partners:</h5>
       <ul class="list-style-circle">
-        <li class="list-item">
-          If not already, please register <a href="{{ get_url('register.sponsor') }}">HERE</a>.
-          This is where you can input your information so we have your contact info, this is very helpful to us!
-        </li>
+        <li class="list-item">If not already, please register <a href="{{ get_url('register.sponsor') }}">here</a>. This is where you can input your information so we have your contact info — this is very helpful to us!</li>
       </ul>
     </div>
-</div>
+  </div>
+</section>
 {% endblock %}
 
 {% block tail %}

@@ -10,7 +10,16 @@
 {% endblock %}
 
 {% block page_container %}
+<section class="page-shell">
+  <div class="wrap" style="max-width: 760px;">
+    <div class="page-head">
+      <span class="eyebrow">Thank You</span>
+      <h1 class="page-title">Register your sponsorship</h1>
+      <p class="page-intro">Share your details so we can connect about your sponsored child.</p>
+    </div>
     {{ lib.render_form(form, return_url, form_opts=form_opts) }}
+  </div>
+</section>
 {% endblock %}
 
 {% block modal %}

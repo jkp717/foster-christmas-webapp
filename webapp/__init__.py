@@ -2,9 +2,27 @@ import os
 from flask import Flask
 from flask_admin import Admin
 
+# Load environment variables from a .env file (project root) before any config
+# is read. This makes `python cli.py run`, `flask run`, and production servers
+# all pick up the .env automatically. python-dotenv is a no-op if the file is
+# absent, and real (already-exported) env vars always take precedence.
+try:
+    from dotenv import load_dotenv
+    # Look for .env in the project root (one level above this package),
+    # so it loads no matter which directory the app is started from.
+    _dotenv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+    load_dotenv(_dotenv_path)
+except ImportError:
+    # python-dotenv not installed: fall back to real environment variables only.
+    pass
+
 from .config import (
     db_defaults, CONTACT_PHONE, CONTACT_EMAIL, CONTACT_NAME, FACEBOOK_URL, AMAZON_WISHLIST, VOLUNTEER_LINK,
-    DONATE_BUTTON_HTML, GIFT_DROPOFF_LOCATIONS, GIFT_PICKUP_DATETIME, GIFT_PICKUP_LOCATION, CHILD_SIGNUP_DEADLINE
+    DONATE_NAV_HTML, GIFT_DROPOFF_LOCATIONS, GIFT_PICKUP_DATETIME, GIFT_PICKUP_LOCATION, CHILD_SIGNUP_DEADLINE,
+    AUTHNET_API_LOGIN_ID, AUTHNET_TRANSACTION_KEY, AUTHNET_SANDBOX, AUTHNET_API_URL, AUTHNET_HOSTED_FORM_URL,
+    AUTHNET_RETURN_PATH, AUTHNET_CANCEL_PATH, AUTHNET_ORDER_DESCRIPTION,
+    PAYPAL_PAYMENT_URL, PAYPAL_HOSTED_BUTTON_ID, PAYPAL_BUSINESS,
+    PAYPAL_CURRENCY, DONATION_PRESET_AMOUNTS
 )
 
 
@@ -54,6 +72,14 @@ def create_app(debug=True):
     app = Flask(__name__)
     if not debug:
         app.config.from_object('config.ProdConfig')
+        # Fail fast if a real production secret key wasn't provided, so the app
+        # can never run with a missing or guessable session/CSRF signing key.
+        if not app.config.get('SECRET_KEY') or app.config['SECRET_KEY'] == 'dev-insecure-change-me':
+            raise RuntimeError(
+                "SECRET_KEY is not set for production. Add a long random "
+                "SECRET_KEY to your .env file (see .env.example). Generate one "
+                "with: python -c \"import secrets; print(secrets.token_hex(32))\""
+            )
     else:
         app.config.from_object('config.DevConfig')
     # ensure the instance folder exists
@@ -99,7 +125,22 @@ def create_app(debug=True):
     app.config['FACEBOOK_URL'] = FACEBOOK_URL
     app.config['AMAZON_WISHLIST'] = AMAZON_WISHLIST
     app.config['VOLUNTEER_LINK'] = VOLUNTEER_LINK
-    app.config['DONATE_BUTTON_HTML'] = DONATE_BUTTON_HTML
+    app.config['DONATE_NAV_HTML'] = DONATE_NAV_HTML
+
+    # donation / payment settings
+    app.config['AUTHNET_API_LOGIN_ID'] = AUTHNET_API_LOGIN_ID
+    app.config['AUTHNET_TRANSACTION_KEY'] = AUTHNET_TRANSACTION_KEY
+    app.config['AUTHNET_SANDBOX'] = AUTHNET_SANDBOX
+    app.config['AUTHNET_API_URL'] = AUTHNET_API_URL
+    app.config['AUTHNET_HOSTED_FORM_URL'] = AUTHNET_HOSTED_FORM_URL
+    app.config['AUTHNET_RETURN_PATH'] = AUTHNET_RETURN_PATH
+    app.config['AUTHNET_CANCEL_PATH'] = AUTHNET_CANCEL_PATH
+    app.config['AUTHNET_ORDER_DESCRIPTION'] = AUTHNET_ORDER_DESCRIPTION
+    app.config['PAYPAL_PAYMENT_URL'] = PAYPAL_PAYMENT_URL
+    app.config['PAYPAL_HOSTED_BUTTON_ID'] = PAYPAL_HOSTED_BUTTON_ID
+    app.config['PAYPAL_BUSINESS'] = PAYPAL_BUSINESS
+    app.config['PAYPAL_CURRENCY'] = PAYPAL_CURRENCY
+    app.config['DONATION_PRESET_AMOUNTS'] = DONATION_PRESET_AMOUNTS
 
     app.config['GIFT_DROPOFF_LOCATIONS'] = GIFT_DROPOFF_LOCATIONS
     app.config['GIFT_PICKUP_LOCATION'] = GIFT_PICKUP_LOCATION

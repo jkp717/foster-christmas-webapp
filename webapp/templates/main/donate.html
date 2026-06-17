@@ -1,0 +1,188 @@
+{% extends 'main/base.html' %}
+
+{% block page_container %}
+<div class="donate-wrap">
+  <div class="donate-card">
+
+    <div class="donate-header">
+      <h1 class="donate-title">Make a Donation</h1>
+      <p class="donate-subtitle">
+        Your gift helps make Christmas morning merry for foster children in
+        Pulaski County. Every dollar goes toward gifts and wishes for kids in care.
+      </p>
+    </div>
+
+    <form id="donate-form" novalidate>
+
+      {# ---------------- Amount selection ---------------- #}
+      <div class="donate-section">
+        <label class="donate-label">Choose an amount</label>
+        <div class="amount-grid">
+          {% for amt in config['DONATION_PRESET_AMOUNTS'] %}
+            <button type="button"
+                    class="amount-btn{% if loop.index == 2 %} is-selected{% endif %}"
+                    data-amount="{{ amt }}">${{ amt }}</button>
+          {% endfor %}
+          <button type="button" class="amount-btn amount-btn-custom" data-custom="1">Other</button>
+        </div>
+
+        <div class="custom-amount-row" id="custom-amount-row" hidden>
+          <span class="custom-currency">$</span>
+          <input type="number" id="custom-amount" class="custom-amount-input"
+                 min="1" step="1" inputmode="decimal" placeholder="Enter amount" />
+        </div>
+      </div>
+
+      {# ---------------- Payment method ---------------- #}
+      <div class="donate-section">
+        <label class="donate-label">Choose how to give</label>
+
+        <div class="method-grid">
+          <label class="method-card is-selected" data-method="paypal">
+            <input type="radio" name="method" value="paypal" checked />
+            <span class="method-card-inner">
+              <span class="method-logo method-logo-paypal">
+                <span class="pp-pay">Pay</span><span class="pp-pal">Pal</span>
+              </span>
+              <span class="method-desc">Pay with PayPal, Venmo, or any card</span>
+            </span>
+          </label>
+
+          <label class="method-card" data-method="authnet">
+            <input type="radio" name="method" value="authnet" />
+            <span class="method-card-inner">
+              <span class="method-logo method-logo-card">Credit / Debit Card</span>
+              <span class="method-desc">Secure checkout powered by Authorize.Net</span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      {# ---------------- Submit ---------------- #}
+      <button type="submit" class="donate-submit" id="donate-submit">
+        Donate <span id="donate-submit-amount">$50</span>
+      </button>
+
+      <p class="donate-secure">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 2 4 5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V5l-8-3z"
+                fill="currentColor" opacity=".15"/>
+          <path d="M12 2 4 5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V5l-8-3z"
+                stroke="currentColor" stroke-width="1.5" fill="none"/>
+          <path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.8"
+                fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        You'll be redirected to your chosen provider's secure page to complete your gift.
+        Holiday Hope Tree never stores your card details.
+      </p>
+    </form>
+
+    {# ---- Hidden PayPal form (hosted donate flow) ---- #}
+    <form id="paypal-form" action="{{ config['PAYPAL_PAYMENT_URL'] }}" method="post" target="_top" class="hidden-pay-form">
+      <input type="hidden" name="cmd" value="_donations" />
+      {% if config['PAYPAL_HOSTED_BUTTON_ID'] %}
+        <input type="hidden" name="hosted_button_id" value="{{ config['PAYPAL_HOSTED_BUTTON_ID'] }}" />
+      {% else %}
+        <input type="hidden" name="business" value="{{ config['PAYPAL_BUSINESS'] }}" />
+        <input type="hidden" name="item_name" value="Holiday Hope Tree Donation" />
+        <input type="hidden" name="no_recurring" value="0" />
+      {% endif %}
+      <input type="hidden" name="currency_code" value="{{ config['PAYPAL_CURRENCY'] }}" />
+      <input type="hidden" name="amount" id="paypal-amount" value="" />
+    </form>
+
+    {# ---- Authorize.Net (Accept Hosted) ----
+       Posts the chosen amount to our server, which requests a one-time form
+       token and forwards the donor to Authorize.Net's secure hosted form with
+       the amount already filled in. #}
+    <form id="authnet-form" method="post"
+          action="{{ get_url('admin.donate_authnet') }}" class="hidden-pay-form">
+      <input type="hidden" name="amount" id="authnet-amount" value="" />
+    </form>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  var DEFAULT_AMOUNT = 50;
+  var selectedAmount = DEFAULT_AMOUNT;
+
+  var amountBtns   = Array.prototype.slice.call(document.querySelectorAll('.amount-btn'));
+  var customRow    = document.getElementById('custom-amount-row');
+  var customInput  = document.getElementById('custom-amount');
+  var methodCards  = Array.prototype.slice.call(document.querySelectorAll('.method-card'));
+  var submitLabel  = document.getElementById('donate-submit-amount');
+  var form         = document.getElementById('donate-form');
+
+  function formatAmount(val) {
+    if (!val || isNaN(val) || val <= 0) return '';
+    return '$' + (Number(val) % 1 === 0 ? Number(val).toFixed(0) : Number(val).toFixed(2));
+  }
+
+  function refreshSubmit() {
+    var label = formatAmount(selectedAmount);
+    submitLabel.textContent = label || '';
+  }
+
+  amountBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      amountBtns.forEach(function (b) { b.classList.remove('is-selected'); });
+      btn.classList.add('is-selected');
+
+      if (btn.dataset.custom) {
+        customRow.hidden = false;
+        customInput.focus();
+        var typed = parseFloat(customInput.value);
+        selectedAmount = (!isNaN(typed) && typed > 0) ? typed : 0;
+      } else {
+        customRow.hidden = true;
+        selectedAmount = parseFloat(btn.dataset.amount);
+      }
+      refreshSubmit();
+    });
+  });
+
+  customInput.addEventListener('input', function () {
+    var typed = parseFloat(customInput.value);
+    selectedAmount = (!isNaN(typed) && typed > 0) ? typed : 0;
+    refreshSubmit();
+  });
+
+  methodCards.forEach(function (card) {
+    card.addEventListener('click', function () {
+      methodCards.forEach(function (c) { c.classList.remove('is-selected'); });
+      card.classList.add('is-selected');
+      card.querySelector('input[type=radio]').checked = true;
+    });
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    if (!selectedAmount || selectedAmount <= 0) {
+      customRow.hidden = false;
+      customInput.focus();
+      customInput.classList.add('input-error');
+      return;
+    }
+    customInput.classList.remove('input-error');
+
+    var method = document.querySelector('input[name=method]:checked').value;
+
+    if (method === 'paypal') {
+      // Pass the chosen amount to PayPal's hosted donate page.
+      document.getElementById('paypal-amount').value = Number(selectedAmount).toFixed(2);
+      document.getElementById('paypal-form').submit();
+    } else {
+      // Authorize.Net (Accept Hosted): send the chosen amount to our server,
+      // which fixes the amount and forwards the donor to the hosted form.
+      document.getElementById('authnet-amount').value = Number(selectedAmount).toFixed(2);
+      document.getElementById('authnet-form').submit();
+    }
+  });
+
+  refreshSubmit();
+})();
+</script>
+{% endblock %}

@@ -1,47 +1,110 @@
 {% extends 'main/base.html' %}
 
+{% block hero %}
+<section class="hero">
+  <div class="hero-media">
+    <img src="{{ url_for('static', filename='img/smiling-girl-opening-gift.jpg') }}" alt="A child smiling while opening a Christmas gift">
+    <div class="hero-scrim"></div>
+  </div>
+  <div class="hero-content reveal">
+    <div class="hero-eyebrow">Pulaski County, Arkansas</div>
+    <h1 class="hero-title">Every child deserves<br>a Christmas morning</h1>
+    <p class="hero-lead">
+      Holiday Hope Tree collects the wishes of foster children and connects them
+      with donors who make those wishes come true — one gift at a time.
+    </p>
+    <div class="hero-actions">
+      <a href="/donate" class="btn-gold">Donate a Gift</a>
+      <a href="{{ get_url('register.get_involved') }}" class="btn-ghost">Ways to Help</a>
+    </div>
+  </div>
+  <a href="#start" class="hero-scroll" aria-label="Scroll to content"><span></span></a>
+</section>
+{% endblock %}
+
 {% block page_container %}
-  <div class="row">
-    <div class="col d-flex justify-content-center">
-      <div class="card index-card">
-        <img class="card-img-top" src="{{ url_for('static', filename='img/christmas-gift2-small.jpg') }}">
-        <div class="card-body">
-          <h5 class="card-title">Register Foster Child</h5>
-          <p class="card-text">Please click below to register a Pulaski County foster child and their wishlist for Christmas</p>
-          <a href="{{ get_url('register.parent') }}" class="btn btn-holiday-red btn-lg">Register</a>
-        </div>
-      </div>
+<span id="start"></span>
+
+<section class="band band-ivory">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">How it works</span>
+      <h2 class="section-title">Three ways to bring the joy</h2>
     </div>
-    <div class="col d-flex justify-content-center">
-      <div class="card index-card">
-        <img class="card-img-top" src="{{ url_for('static', filename='img/smiling-girl-opening-gift-small.jpg') }}">
-        <div class="card-body">
-          <h5 class="card-title">Already chosen a wishlist?</h5>
-          <p class="card-text">Click below to register a wishlist chosen from a Holiday Hope Tree</p>
-          <a href="{{ get_url('register.sponsor') }}" class="btn btn-holiday-red btn-lg">Sponsor</a>
-        </div>
-      </div>
+    <div class="action-rail">
+      <a href="{{ get_url('register.parent') }}" class="action reveal">
+        <span class="action-num">01</span>
+        <span class="action-body">
+          <span class="action-title">Register a foster child</span>
+          <span class="action-text">Foster parents and caseworkers add a child and their wishlist for the season.</span>
+        </span>
+        <span class="action-arrow">&rsaquo;</span>
+      </a>
+      <a href="{{ get_url('register.sponsor') }}" class="action reveal">
+        <span class="action-num">02</span>
+        <span class="action-body">
+          <span class="action-title">Sponsor a wishlist</span>
+          <span class="action-text">Already chose a list from a Holiday Hope Tree? Register it so we can connect.</span>
+        </span>
+        <span class="action-arrow">&rsaquo;</span>
+      </a>
+      <a href="/donate" class="action reveal">
+        <span class="action-num">03</span>
+        <span class="action-body">
+          <span class="action-title">Give a donation</span>
+          <span class="action-text">Fund gifts for children who enter care right before Christmas.</span>
+        </span>
+        <span class="action-arrow">&rsaquo;</span>
+      </a>
     </div>
-    <div class="col d-flex justify-content-center">
-      <div class="card index-card">
-        <img class="card-img-top" src="{{ url_for('static', filename='img/magnifying-glass-small.jpg') }}">
-        <div class="card-body">
-          <h5 class="card-title">More information</h5>
-          <p class="card-text">Get more info regarding gift pick-up and drop-off, etc </p>
-          <a href="{{ get_url('register.details') }}" class="btn btn-holiday-red btn-lg">More Info</a>
-        </div>
+  </div>
+</section>
+
+<section class="band band-evergreen">
+  <div class="wrap">
+    <div class="stats reveal">
+      <div class="stat">
+        <span class="stat-num">500+</span>
+        <span class="stat-label">children served each year</span>
       </div>
-    </div>
-    <div class="col d-flex justify-content-center">
-      <div class="card index-card">
-        <img class="card-img-top" src="{{ url_for('static', filename='img/joined-hands-multicolor-small.png') }}">
-        <div class="card-body">
-          <h5 class="card-title">Want to get involved?</h5>
-          <p class="card-text">Click below to find out more about how you can help!</p>
-          <a href="{{ get_url('register.get_involved') }}" class="btn btn-holiday-red btn-lg">Get Involved</a>
-        </div>
+      <div class="stat">
+        <span class="stat-num">$400</span>
+        <span class="stat-label">average gift bundle per child</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">100s</span>
+        <span class="stat-label">volunteers from all over Arkansas</span>
       </div>
     </div>
   </div>
+</section>
+
+<section class="band band-ivory">
+  <div class="wrap feature">
+    <div class="feature-media reveal">
+      <img src="{{ url_for('static', filename='img/joined-hands-multicolor-small.png') }}" alt="Many hands joined together">
     </div>
+    <div class="feature-body reveal">
+      <span class="eyebrow">It takes a village</span>
+      <h2 class="section-title">A community wrapped around its kids</h2>
+      <p>
+        Churches of every denomination, small businesses, and neighbors come
+        together to host trees, run toy drives, and shop wishlists. State funding
+        doesn't cover holiday gifts — so our community does.
+      </p>
+      <div class="feature-actions">
+        <a href="{{ get_url('admin.about_us') }}" class="btn-outline">Our Story</a>
+        <a href="{{ get_url('register.get_involved') }}" class="text-link">See all the ways to help &rsaquo;</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band band-gold-cta reveal">
+  <div class="wrap cta-wrap">
+    <h2 class="cta-title">Make this their best Christmas yet</h2>
+    <p class="cta-text">A single gift can change how a child remembers this season.</p>
+    <a href="/donate" class="btn-evergreen">Donate Now</a>
+  </div>
+</section>
 {% endblock %}
