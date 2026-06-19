@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import current_app
 
 from webapp import create_app
@@ -33,64 +33,269 @@ def get_orm_class_by_tablename(db, tablename: str):
     return None
 
 
-@cli.command('archive-data')
-@click.argument('date_string')
-@click.argument('table_name')
-def archive_data_command(date_string: str, table_name: str):
+def _copy_columns(src_row, dest_cls, overrides=None):
     """
-    Moves data older than a specified date to the archive table.
-    Usage: flask archive-data YYYY-MM-DD
+    Build a dest_cls instance from a source row, copying columns that exist on
+    both. `overrides` replaces/sets specific columns (e.g. remapped FKs,
+    archive_date). The primary key 'id' is never copied so the archive row gets
+    its own fresh id.
     """
-    try:
-        cutoff_date = datetime.strptime(date_string, '%Y-%m-%d')
-    except ValueError:
-        click.echo("Error: Invalid date format. Please use YYYY-MM-DD.")
+    overrides = overrides or {}
+    dest_cols = {c.key for c in dest_cls.__table__.columns}
+    data = {}
+    for col in dest_cols:
+        if col == 'id':
+            continue
+        if col in overrides:
+            data[col] = overrides[col]
+        elif hasattr(src_row, col):
+            data[col] = getattr(src_row, col)
+    # Make sure overrides that aren't real columns are ignored, but any override
+    # naming a real column is applied even if missing on the source.
+    for k, v in overrides.items():
+        if k in dest_cols and k != 'id':
+            data[k] = v
+    return dest_cls(**data)
+
+
+@cli.command('archive-season')
+@click.option('--yes', is_flag=True, default=False,
+              help='Skip the confirmation prompt (for non-interactive use).')
+def archive_season_command(yes):
+    """
+    Archive the current season's data, then wipe the live tables for a new
+    season.
+
+    Copies child / parent / gift / sponsor / sponsor_request / gift_fulfillment
+    rows into their *_archive tables (stamping archive_date), then deletes them
+    from the live tables. Reference tables (gender, race, fav_color, shoe_size,
+    clothing_size, dhs_office, church) and site_setting are left untouched.
+
+    Foreign keys are remapped: parents and sponsors are archived first and their
+    new archive ids are used when archiving children. Gifts and gift_fulfillment
+    map to children by the business key child_id (a string), which is preserved.
+    """
+    from webapp.models import (
+        db, Child, ChildArchive, Parent, ParentArchive, Gift, GiftArchive,
+        Sponsor, SponsorArchive, SponsorRequest, SponsorRequestArchive,
+        GiftFulfillment, GiftFulfillmentArchive,
+    )
+
+    counts = {
+        'sponsors': Sponsor.query.count(),
+        'parents': Parent.query.count(),
+        'children': Child.query.count(),
+        'gifts': Gift.query.count(),
+        'gift_fulfillment': GiftFulfillment.query.count(),
+        'sponsor_requests': SponsorRequest.query.count(),
+    }
+    total = sum(counts.values())
+
+    click.echo("")
+    click.echo("This will ARCHIVE and then DELETE the current season's data:")
+    for name, n in counts.items():
+        click.echo(f"  {name:>18}: {n}")
+    click.echo(f"  {'TOTAL':>18}: {total}")
+    click.echo("")
+    click.echo("Reference tables (gender, race, fav_color, shoe_size, clothing_size,")
+    click.echo("dhs_office, church) and site_setting are NOT touched.")
+    click.echo("")
+
+    if total == 0:
+        click.echo("Nothing to archive. Exiting.")
         return
 
-    with create_app().app_context():
-        data_table = get_orm_class_by_tablename(db, table_name.lower())
-        archive_table = get_orm_class_by_tablename(db, f"{table_name.lower()}_archive")
+    if not yes:
+        if not click.confirm("Proceed with archive + wipe?", default=False):
+            click.echo("Aborted. No changes made.")
+            return
 
-        source_columns = [c.key for c in data_table.__table__.columns]
-        # click.echo(source_columns)
-        result = db.session.execute(
-            db.select(data_table).where(data_table.create_date < cutoff_date)
-        ).all()
+    run_ts = datetime.now(timezone.utc)
 
-        for row in result:
-            row_data = {col: getattr(row, col) for col in source_columns}
-            new_row = archive_table(**row_data)
-            db.session.add(new_row)
-            # db.session.delete(row)
+    try:
+        # Determine the season year for this run FIRST so every archive row can
+        # be stamped with the same value. Derived from the children's
+        # registration year (latest create_date year present); falls back to the
+        # run timestamp's year if there are no children.
+        child_years = [c.create_date.year for c in Child.query.all() if c.create_date]
+        season_year = max(child_years) if child_years else run_ts.year
+        click.echo(f"Season year for this archive run: {season_year}")
+
+        # 1) Sponsors -> SponsorArchive, capturing live_id -> archive obj
+        sponsor_map = {}
+        for s in Sponsor.query.all():
+            arc = _copy_columns(s, SponsorArchive,
+                                overrides={'archive_date': run_ts,
+                                           'archive_year': season_year})
+            db.session.add(arc)
+            sponsor_map[s.id] = arc
+
+        # 2) Parents -> ParentArchive
+        parent_map = {}
+        for p in Parent.query.all():
+            arc = _copy_columns(p, ParentArchive,
+                                overrides={'archive_date': run_ts,
+                                           'archive_year': season_year})
+            db.session.add(arc)
+            parent_map[p.id] = arc
+
+        # Flush so the archive parents/sponsors get their new ids for FK remap.
+        db.session.flush()
+
+        # 3) Children -> ChildArchive, remapping parent_id / sponsor_id to the
+        #    NEW archive ids. child_id (business key string) is preserved, and
+        #    archive_year stamps the season so child_id is unique per season.
+        for c in Child.query.all():
+            overrides = {'archive_date': run_ts, 'archive_year': season_year}
+            if c.parent_id is not None and c.parent_id in parent_map:
+                overrides['parent_id'] = parent_map[c.parent_id].id
+            else:
+                overrides['parent_id'] = None
+            if c.sponsor_id is not None and c.sponsor_id in sponsor_map:
+                overrides['sponsor_id'] = sponsor_map[c.sponsor_id].id
+            else:
+                overrides['sponsor_id'] = None
+            arc = _copy_columns(c, ChildArchive, overrides=overrides)
+            db.session.add(arc)
+
+        # 4) Gifts -> GiftArchive (child_id + archive_year link to the child)
+        for g in Gift.query.all():
+            arc = _copy_columns(g, GiftArchive,
+                                overrides={'archive_date': run_ts,
+                                           'archive_year': season_year})
+            db.session.add(arc)
+
+        # 5) GiftFulfillment -> GiftFulfillmentArchive (child_id + archive_year).
+        #    The live table has no create_date, so stamp it with the run time.
+        for gf in GiftFulfillment.query.all():
+            arc = _copy_columns(gf, GiftFulfillmentArchive,
+                                overrides={'archive_date': run_ts,
+                                           'archive_year': season_year,
+                                           'create_date': run_ts})
+            db.session.add(arc)
+
+        # 6) SponsorRequests -> SponsorRequestArchive (independent)
+        for sr in SponsorRequest.query.all():
+            arc = _copy_columns(sr, SponsorRequestArchive,
+                                overrides={'archive_date': run_ts,
+                                           'archive_year': season_year})
+            db.session.add(arc)
+
+        # Flush all archive inserts before deleting the live rows.
+        db.session.flush()
+
+        # 7) Wipe live tables in FK-safe order: dependent rows first.
+        #    gift + gift_fulfillment reference child; child references parent +
+        #    sponsor. sponsor_request is independent.
+        Gift.query.delete()
+        GiftFulfillment.query.delete()
+        Child.query.delete()
+        Parent.query.delete()
+        Sponsor.query.delete()
+        SponsorRequest.query.delete()
 
         db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        click.echo(f"ERROR: archive failed and was rolled back. No data changed.\n  {exc}")
+        raise
 
-    # Query for records to be archived
-    # records_to_archive = UserData.query.filter(UserData.timestamp < cutoff_date).all()
-    # count = len(records_to_archive)
-
-    # if count == 0:
-    #     click.echo("No records found to archive.")
-    #     return
-    #
-    # click.echo(f"Found {count} record(s) to archive.")
-    #
-    # for record in records_to_archive:
-    #     # Create a new record in the archive table
-    #     archived_record = ArchivedUserData(
-    #         username=record.username,
-    #         timestamp=record.timestamp
-    #     )
-    #     db.session.add(archived_record)
-    #     # Delete the old record
-    #     db.session.delete(record)
-    #
-    # db.session.commit()
-    # click.echo(f"Successfully archived {count} record(s) older than {date_string}.")
+    click.echo("")
+    click.echo(f"Archived {total} record(s) with archive_date {run_ts.isoformat()} "
+               f"and wiped the live tables. Ready for a new season.")
+    click.echo("")
 
 @cli.command('db-create-all')
 def db_create_all():
     db.create_all()
+
+
+@cli.command('rebuild-archive-tables')
+@click.option('--yes', is_flag=True, default=False,
+              help='Skip the confirmation prompt.')
+def rebuild_archive_tables(yes):
+    """
+    Drop and recreate the archive tables so they pick up the current schema
+    (string child_id, archive_year, composite (child_id, archive_year) unique
+    constraint and composite foreign keys, plus archive_date).
+
+    SAFE ONLY WHEN THE ARCHIVE TABLES ARE EMPTY -- this DROPS them. It never
+    touches live tables, reference tables, or site_setting. Run once when
+    upgrading to the new archive schema.
+    """
+    from sqlalchemy import inspect as sa_inspect, text as sa_text
+    from webapp.models import (
+        ChildArchive, ParentArchive, GiftArchive, SponsorArchive,
+        SponsorRequestArchive, GiftFulfillmentArchive,
+    )
+
+    # Drop order respects FKs: dependents (gift/fulfillment -> child) first,
+    # child before parent/sponsor.
+    ordered = [
+        GiftArchive, GiftFulfillmentArchive, ChildArchive,
+        ParentArchive, SponsorArchive, SponsorRequestArchive,
+    ]
+
+    insp = sa_inspect(db.engine)
+    existing = set(insp.get_table_names())
+
+    # Safety check: refuse if any archive table has rows. Use raw SQL for the
+    # count -- an ORM query would reference new-schema columns (e.g.
+    # archive_year) that the OLD table on disk doesn't have yet, which would
+    # crash this very check.
+    nonempty = []
+    for model in ordered:
+        table = model.__tablename__
+        if table in existing:
+            count = db.session.execute(
+                sa_text(f"SELECT COUNT(*) FROM {table}")
+            ).scalar()
+            if count:
+                nonempty.append((table, count))
+    if nonempty:
+        click.echo("Refusing to rebuild: these archive tables contain data:")
+        for name, n in nonempty:
+            click.echo(f"  {name}: {n} row(s)")
+        click.echo("Back up and clear them first, or migrate manually.")
+        return
+
+    click.echo("This will DROP and recreate these (empty) archive tables:")
+    for model in ordered:
+        click.echo(f"  {model.__tablename__}")
+    if not yes and not click.confirm("Proceed?", default=False):
+        click.echo("Aborted.")
+        return
+
+    # Drop (ignore those that don't exist yet), then recreate everything.
+    # Raw DROP TABLE is schema-agnostic, so it works even though the model
+    # metadata no longer matches the old table on disk.
+    for model in ordered:
+        table = model.__tablename__
+        if table in existing:
+            db.session.execute(sa_text(f"DROP TABLE {table}"))
+            click.echo(f"  dropped {table}")
+    db.session.commit()
+    db.create_all()
+    click.echo("")
+    click.echo("Done. Archive tables recreated with the current schema.")
+
+
+@cli.command('create-admin-hash')
+@click.option('--password', prompt=True, hide_input=True,
+              confirmation_prompt=True,
+              help='The admin password to hash (input hidden).')
+def create_admin_hash(password):
+    """
+    Generate a password hash for the admin login. Paste the printed value into
+    your .env file as ADMIN_PASSWORD_HASH (the plaintext is never stored).
+    """
+    from werkzeug.security import generate_password_hash
+    pw_hash = generate_password_hash(password)
+    click.echo("")
+    click.echo("Add this line to your .env file:")
+    click.echo("")
+    click.echo(f"ADMIN_PASSWORD_HASH={pw_hash}")
+    click.echo("")
 
 
 if __name__ == '__main__':
