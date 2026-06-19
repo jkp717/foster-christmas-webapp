@@ -2,6 +2,9 @@
 
 {% block body %}
 <div class="container-fluid">
+  <div class="d-flex justify-content-end" style="margin-bottom: 1rem;">
+    <a href="{{ url_for('auth_logout') }}" class="btn btn-secondary btn-sm">Sign Out</a>
+  </div>
   <h3>Download Reports</h3>
   <div class="list-group">
     <a href="{{ get_url('gift.export', export_type='csv') }}" class="list-group-item list-group-item-action flex-column align-items-start">
