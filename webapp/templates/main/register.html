@@ -29,7 +29,15 @@
               <tbody>
               {% for child in parent.children %}
                 <tr>
-                  <td><a href="{{ get_url('register.child', parent_id=parent.id, id=child.id ) }}">EDIT</a> | <a href="{{ get_url('register.child', parent_id=parent.id, id=child.id, delete=True ) }}">DELETE</a></td>
+                  <td>
+                    <a href="{{ get_url('register.child', parent_id=parent.id, id=child.id ) }}">EDIT</a>
+                    |
+                    <form method="post" action="{{ get_url('register.child', parent_id=parent.id, id=child.id) }}" style="display:inline" onsubmit="return confirm('Delete this child record?');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                      <input type="hidden" name="delete" value="1" />
+                      <button type="submit" class="text-link" style="background:none;border:0;padding:0;cursor:pointer;">DELETE</button>
+                    </form>
+                  </td>
                   <td>{{ child.first_name }}</td>
                   <td>{{ child.last_name }}</td>
                   <td>{{ child.age }}</td>
@@ -91,11 +99,11 @@
                 If you live in Pulaski county and have a child from another county please contact your case-worker from that county about how they are handling Christmas, every county is a little different.
               </li>
               <li class="list-item">
-                Gift pick up will be at {{ config['GIFT_PICKUP_LOCATION'] }} on {{ config['GIFT_PICKUP_DATETIME'] }}. We would love to meet you and thank you in person but if this time absolutely does not work,
+                Gift pick up will be at {{ config['GIFT_PICKUP_LOCATION'] }} on {{ gift_pickup_datetime }}. We would love to meet you and thank you in person but if this time absolutely does not work,
                 please make sure to click the box “Will need DHS to deliver” when registering your child so that we can get that arranged for you.
               </li>
                 <li class="list-item">
-                  Deadline for the child’s wish lists is {{ config['CHILD_SIGNUP_DEADLINE'] }}.
+                  Deadline for the child’s wish lists is {{ child_signup_deadline }}.
                   After that date the foster child will be given age appropriate gifts or you may have the opportunity to shop donated gifts.
                   Please reach out to {{ config['CONTACT_NAME'] }} at <a href="mailto: {{ config['CONTACT_EMAIL'] }}"> {{ config['CONTACT_EMAIL'] }}</a> for more info.
                 </li>

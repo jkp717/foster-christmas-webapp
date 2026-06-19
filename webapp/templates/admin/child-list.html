@@ -3,7 +3,7 @@
 
 {% block head %}
     {{ super() }}
-    <link href="{{ url_for('static', filename='css/admin.css') }}?v=1" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}?v=10" rel="stylesheet">
 {% endblock %}
 
 {% block list_row scoped %}
@@ -28,6 +28,31 @@
         <td class="col-{{c}}">
         {% if c == 'child_id' and row.is_split | default(false) %}
             {{ get_value(row, c) }}
+        {% elif admin_view.is_comment_column(c) %}
+            {# Comment/note column: show a truncated, tooltipped preview, with a
+               separate small pencil icon that triggers inline editing (rather
+               than making the whole text a click-to-edit link). #}
+            <div class="note-cell-wrap">
+                <span class="note-display">{{ get_value(row, c) }}</span>
+                {% if admin_view.is_editable(c) %}
+                    {% set form = list_forms[get_pk_value(row)] %}
+                    {# The x-editable widget keeps the REAL note value (so the
+                       editor prepopulates and positions correctly). Its visible
+                       text is hidden by CSS and replaced with a pencil glyph, so
+                       only a small edit icon shows. The full note text is in the
+                       .note-display span above. #}
+                    {% set raw_note = (row|attr(c)) or '' %}
+                    <span class="note-edit-trigger" title="{{ _gettext('Edit note') }}">
+                    {% if form.csrf_token is defined and form.csrf_token %}
+                    {{ form[c](pk=get_pk_value(row), display_value=raw_note, csrf=form.csrf_token._value()) }}
+                    {% elif csrf_token is defined and csrf_token %}
+                    {{ form[c](pk=get_pk_value(row), display_value=raw_note, csrf=csrf_token()) }}
+                    {% else %}
+                    {{ form[c](pk=get_pk_value(row), display_value=raw_note) }}
+                    {% endif %}
+                    </span>
+                {% endif %}
+            </div>
         {% else %}
         {% if admin_view.is_editable(c) %}
             {% set form = list_forms[get_pk_value(row)] %}
@@ -44,4 +69,33 @@
         {% endif %}
         </td>
     {% endfor %}
+{% endblock %}
+
+{% block tail %}
+    {{ super() }}
+    <script>
+        $(document).ready(function() {
+            // Inline-edit popover for notes: keep Flask-Admin's default anchored
+            // popover (it appears next to the pencil), but prevent it from
+            // rendering off-screen. The fix is container:'body', which lifts the
+            // popover out of the table's horizontally-scrolling wrapper (that
+            // wrapper was clipping it). Opening toward the left keeps it on screen
+            // since notes is the right-most column.
+            $('.note-edit-trigger .editable').each(function() {
+                var $el = $(this);
+                try {
+                    $el.editable('option', 'container', 'body');
+                    $el.editable('option', 'placement', 'left');
+                } catch (err) {
+                    $el.attr('data-placement', 'left');
+                }
+            });
+
+            // After an inline note edit saves, reload so the truncated preview
+            // and the pencil trigger re-render cleanly.
+            $('.editable').on('save', function(e, params) {
+                setTimeout(function() { window.location.reload(true); }, 100);
+            });
+        });
+    </script>
 {% endblock %}

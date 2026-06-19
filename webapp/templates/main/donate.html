@@ -97,6 +97,7 @@
        the amount already filled in. #}
     <form id="authnet-form" method="post"
           action="{{ get_url('admin.donate_authnet') }}" class="hidden-pay-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <input type="hidden" name="amount" id="authnet-amount" value="" />
     </form>
 
