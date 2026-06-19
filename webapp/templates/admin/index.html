@@ -1,5 +1,13 @@
 {% extends 'admin/base.html' %}
 
+{# This page extends admin/base.html directly, bypassing our admin/master.html
+   override, so the global admin stylesheet is injected here too. Keep the
+   version query string in sync with master.html. #}
+{% block head %}
+    {{ super() }}
+    <link href="{{ url_for('static', filename='css/admin-global.css') }}?v=5" rel="stylesheet">
+{% endblock %}
+
 {% block body %}
 <div class="container-fluid">
   <div class="d-flex justify-content-end" style="margin-bottom: 1rem;">

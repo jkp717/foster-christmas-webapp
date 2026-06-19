@@ -41,7 +41,7 @@
     overflow: hidden;
     white-space: normal;
     word-break: break-word;
-    font-size: 0.8rem;       /* smaller than the row default */
+    font-size: 0.9rem;       /* match the 0.9rem table-cell text */
     line-height: 1.3;
     color: #495057;          /* slightly muted -- reads as secondary info */
 }
@@ -99,22 +99,39 @@ th.column-header.col-note,
 }
 
 /* ---- Inline-edit (x-editable) textarea sizing ------------------------- */
-/* The note editor uses Flask-Admin's default anchored popover (positioned next
-   to the pencil; kept on screen via container:'body' + left placement in JS).
-   We only size the textarea so notes are comfortable to edit and resizable. */
+/* The note editor's popover is pinned to a fixed, centered position by JS in
+   child-list.html (Popper otherwise places it off-screen on this very wide
+   table). This CSS is a backstop: if a late Popper update fires after our JS,
+   these !important rules keep the popover on-screen. We size the textarea so
+   notes are comfortable to edit and resizable. */
 .editable-container .editableform textarea,
 .editable-container textarea {
     resize: both;
-    width: 300px;             /* initial width; user can drag wider/narrower */
-    max-width: 80vw;
-    min-height: 110px;
+    width: 320px;             /* initial width; user can drag wider/narrower */
+    max-width: 86vw;
+    min-height: 120px;
     box-sizing: border-box;
 }
 
-/* Width backstop so the anchored popover can't itself exceed the viewport on a
-   narrow window. This does not move the popover -- placement stays anchored. */
-.editable-container.editable-popup,
-.editable-container.popup,
-.editable-container.popover {
-    max-width: 90vw;
+/* Fixed, viewport-centered popover backstop for the NOTE editor only. The
+   note popover is the one containing a <textarea> (child_id/church editors use
+   text/select and keep their default anchored placement). :has() scopes us to
+   just that popover; the JS in child-list.html is the primary mechanism and is
+   already scoped to .note-edit-trigger, so this is a styling backstop. */
+.editable-container.editable-popup:has(textarea),
+.editable-container.popover:has(textarea) {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+    max-width: 92vw !important;
+    z-index: 2000 !important;
+}
+
+/* The arrow pointed at the anchor; a centered popover has no anchor to point
+   to, so hide it (note popover only). */
+.editable-container.editable-popup:has(textarea) .arrow,
+.editable-container.popover:has(textarea) .arrow {
+    display: none !important;
 }

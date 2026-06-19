@@ -5,6 +5,13 @@
    a Name / Value pair, with a single Edit button. The underlying storage is
    unchanged -- this only changes the display. #}
 
+{# Extends admin/base.html directly (bypasses admin/master.html), so the global
+   admin stylesheet is injected here too. Keep the version in sync. #}
+{% block head %}
+    {{ super() }}
+    <link href="{{ url_for('static', filename='css/admin-global.css') }}?v=5" rel="stylesheet">
+{% endblock %}
+
 {% block body %}
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-3">

@@ -3,7 +3,7 @@
 
 {% block head %}
     {{ super() }}
-    <link href="{{ url_for('static', filename='css/admin.css') }}?v=10" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}?v=11" rel="stylesheet">
 {% endblock %}
 
 {% block list_row scoped %}
@@ -75,12 +75,43 @@
     {{ super() }}
     <script>
         $(document).ready(function() {
-            // Inline-edit popover for notes: keep Flask-Admin's default anchored
-            // popover (it appears next to the pencil), but prevent it from
-            // rendering off-screen. The fix is container:'body', which lifts the
-            // popover out of the table's horizontally-scrolling wrapper (that
-            // wrapper was clipping it). Opening toward the left keeps it on screen
-            // since notes is the right-most column.
+            // Inline-edit popover for notes.
+            //
+            // Problem: x-editable uses Popper to position the popover, and on
+            // this very wide child table Popper computes an off-screen X
+            // (e.g. translate3d(1432px, ...)) so the popover renders past the
+            // right edge. container:'body' and placement:'left' don't help
+            // because Popper still measures against the wide document.
+            //
+            // Fix: once the popover is shown, take over its position entirely --
+            // pin it to the viewport with position:fixed and center it on
+            // screen, overriding Popper's inline transform. position:fixed makes
+            // it relative to the viewport (not the 1432px-wide document), so it
+            // is always visible regardless of column width or scroll.
+            function pinNoteEditor($el) {
+                // The note popover is the visible editable popup containing a
+                // textarea (child_id/church editors use text/select). Target it
+                // specifically so we don't reposition a different editor.
+                var $pop = $('.editable-container:visible').filter(function() {
+                    return $(this).find('textarea').length > 0;
+                }).last();
+                if (!$pop.length) { return; }
+                $pop.css({
+                    position: 'fixed',
+                    top: '50%',
+                    left: '50%',
+                    // Override Popper's inline translate3d; center on screen.
+                    transform: 'translate(-50%, -50%)',
+                    margin: '0',
+                    'z-index': 2000,
+                    'max-width': '92vw',
+                    'will-change': 'auto'
+                });
+                // Hide the arrow -- it pointed at the anchor, which no longer
+                // matches a centered popover.
+                $pop.find('.arrow').hide();
+            }
+
             $('.note-edit-trigger .editable').each(function() {
                 var $el = $(this);
                 try {
@@ -89,6 +120,12 @@
                 } catch (err) {
                     $el.attr('data-placement', 'left');
                 }
+                // When this note editor opens, pin its popover on-screen.
+                $el.on('shown', function() {
+                    // Defer so Popper finishes its own positioning first, then
+                    // we override it.
+                    setTimeout(function() { pinNoteEditor($el); }, 0);
+                });
             });
 
             // After an inline note edit saves, reload so the truncated preview
