@@ -97,9 +97,13 @@ CHILD_ID_START_VALUE = 1
 CHILD_ID_END_VALUE = 399
 
 # Dates & Locations
-GIFT_PICKUP_DATETIME = "Friday, December 12th 9-5pm"
 GIFT_PICKUP_LOCATION = "That Church Sherwood (901 E Kiehl Ave, Sherwood)"
-CHILD_SIGNUP_DEADLINE = "Nov 2nd"
+
+# NOTE: The gift pickup window and child signup deadline are no longer kept
+# here. They are managed by the admin in the "Site Settings" screen and stored
+# in the SiteSetting database table. A brand-new database starts with signups
+# open, no deadline, and no pickup window set; the admin fills those in.
+
 GIFT_DROPOFF_LOCATIONS = [
     {
         "LOCATION": "The CALL Support Center, 4020 Woodland Heights, Little Rock, AR 72212",

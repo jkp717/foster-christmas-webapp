@@ -10,13 +10,17 @@ from flask_admin.contrib.sqla.view import ModelView
 from flask_admin.model.template import TemplateLinkRowAction
 from flask_admin.babel import gettext
 from flask_admin.form import rules, FormOpts
+from flask_wtf import FlaskForm
 from wtforms_alchemy import PhoneNumberField
 from wtforms.widgets import TelInput
 
 from webapp.models import db, Gift, Child, Parent, DhsOffice, Gender, Race, ShoeSize, ClothingSize, FavColor, \
-    Church, Sponsor, SponsorRequest, ParentArchive, SponsorArchive, ChildArchive, GiftArchive, GiftFulfillment
+    Church, Sponsor, SponsorRequest, ParentArchive, SponsorArchive, ChildArchive, GiftArchive, GiftFulfillment, \
+    SponsorRequestArchive, GiftFulfillmentArchive, SiteSetting
 import webapp.util as util
 import webapp.authnet as authnet
+from webapp.auth import _SecureViewMixin, is_readonly_user, is_comment_field
+from webapp.formfields import TwelveHourTimeField
 from webapp.config import GIFT_DELIVERY_DISCLAIMER, REGISTER_CHILD_DISCLAIMER, SPONSORSHIP_DISCLAIMER, \
     SPONSOR_CHILD_DISCLAIMER, SPONSOR_REQUEST_DISCLAIMER, CHILD_REGISTRY_HELPER_TEXT
 
@@ -118,6 +122,9 @@ class RegisterView(BaseView):
 
     @expose('/', methods=['GET', 'POST'])
     def parent(self):
+        # Child signup gate: if closed (manually or past deadline), redirect.
+        if not SiteSetting.get().is_child_signup_open:
+            return redirect(self.get_url('register.signup_closed'))
         model_view = ParentView(Parent, db.session)
         return_url = '/'
 
@@ -172,6 +179,9 @@ class RegisterView(BaseView):
 
     @expose('/<int:parent_id>/child', methods=['GET', 'POST'])
     def child(self, parent_id):
+        # Child signup gate: if closed (manually or past deadline), redirect.
+        if not SiteSetting.get().is_child_signup_open:
+            return redirect(self.get_url('register.signup_closed'))
         parent = db.session.query(Parent).filter(Parent.id == parent_id).one()
         if not parent:
             flash("Unable to find the foster parent information in system!")
@@ -183,7 +193,15 @@ class RegisterView(BaseView):
             if model is None:
                 flash(gettext('Child record does not exist.'), 'error')
                 return redirect(self.get_url('register.child', parent_id=parent_id))
-            if request.args.get('delete'):
+            # Ownership check: the child must belong to the parent in the URL,
+            # so one family cannot view or modify another family's records by
+            # guessing IDs.
+            if model.parent_id != parent.id:
+                flash(gettext('Child record does not exist.'), 'error')
+                return redirect(self.get_url('register.child', parent_id=parent_id))
+            # Deletes must be POST (CSRF-protected) so a crawler, prefetch, or
+            # crafted link cannot delete a record via GET.
+            if request.method == 'POST' and request.form.get('delete'):
                 db.session.delete(model)
                 db.session.commit()
                 flash(gettext('Child record has been deleted.'), 'success')
@@ -326,13 +344,21 @@ class RegisterView(BaseView):
     def details(self):
         return self.render(
             'main/details.html',
+            child_signup_deadline=SiteSetting.get().child_signup_deadline_display,
+        )
+
+    @expose('/signup-closed', methods=['GET'])
+    def signup_closed(self):
+        return self.render(
+            'main/signup-closed.html',
+            child_signup_deadline=SiteSetting.get().child_signup_deadline_display,
         )
 
     def is_visible(self):
         return False
 
 
-class AdminReportsView(AdminIndexView):
+class AdminReportsView(_SecureViewMixin, AdminIndexView):
 
     @expose('/')
     def index(self):
@@ -346,8 +372,13 @@ class AdminReportsView(AdminIndexView):
             return redirect(self.get_url('admin.child', flt1_sponsored_equals=1))
 
 
-class BaseView(ModelView):
+class BaseView(_SecureViewMixin, ModelView):
     page_size = 50
+    # Use Flask-WTF's FlaskForm as the form base so every admin and public form
+    # carries the SAME CSRF token that the app-wide CSRFProtect validates.
+    # (Using Flask-Admin's SecureForm here instead causes a token mismatch with
+    # CSRFProtect, which silently rejects every POST and reloads the form.)
+    form_base_class = FlaskForm
     column_type_formatters = util.DEFAULT_FORMATTERS
     form_excluded_columns = ['create_date', 'modify_date']
     column_exclude_list = form_excluded_columns
@@ -356,10 +387,64 @@ class BaseView(ModelView):
     can_view_details = True
     can_edit = True
     can_export = True
-    can_delete = True
-    can_create = True
     edit_template = 'admin/edit.html'
     create_template = 'admin/create.html'
+
+    # --- role-based access ------------------------------------------------
+    # A read-only user can view everything and open the edit form, but can only
+    # change comment/note-type fields. Creating and deleting are blocked. The
+    # real enforcement is server-side in update_model(); disabling fields in the
+    # form is only a convenience for the UI.
+    @property
+    def can_create(self):
+        return not is_readonly_user()
+
+    @property
+    def can_delete(self):
+        return not is_readonly_user()
+
+    def is_comment_column(self, name):
+        """Template helper: is this list column a comment/note-type field?"""
+        return is_comment_field(name)
+
+    def edit_form(self, obj=None):
+        form = super().edit_form(obj=obj)
+        if is_readonly_user():
+            # Visually lock every non-comment field. Saved changes to those
+            # fields are ignored regardless (see update_model), so this is just
+            # to make the UI honest.
+            for field in form:
+                if field.name == 'csrf_token':
+                    continue
+                if not is_comment_field(field.name):
+                    render_kw = dict(getattr(field, 'render_kw', None) or {})
+                    render_kw['disabled'] = True
+                    field.render_kw = render_kw
+        return form
+
+    def update_model(self, form, model):
+        if is_readonly_user():
+            # Enforce read-only-except-comments on the SERVER. Capture the
+            # original values of every non-comment column, let Flask-Admin apply
+            # the form, then restore the originals so only comment fields can
+            # actually change. This defeats any crafted/forged POST that tries
+            # to edit locked fields.
+            from sqlalchemy import inspect as sa_inspect
+            originals = {}
+            for col in sa_inspect(model).mapper.column_attrs:
+                key = col.key
+                if not is_comment_field(key):
+                    originals[key] = getattr(model, key)
+            result = super().update_model(form, model)
+            changed = False
+            for key, value in originals.items():
+                if getattr(model, key) != value:
+                    setattr(model, key, value)
+                    changed = True
+            if changed:
+                self.session.commit()
+            return result
+        return super().update_model(form, model)
 
 
 class ChildView(BaseView):
@@ -414,7 +499,8 @@ class ChildView(BaseView):
     }
     column_formatters = {
         'gifts': util.gift_list_formatter,
-        'child_id': util.child_id_formatter
+        'child_id': util.child_id_formatter,
+        'note': util.note_preview_formatter,
     }
     column_formatters_export = {
         'gifts': util.gift_list_export_formatter
@@ -436,6 +522,10 @@ class ChildView(BaseView):
 
     @expose('/split', methods=['GET', 'POST'])
     def split_gifts(self):
+        # Splitting creates/modifies records, so it is off-limits to read-only.
+        if is_readonly_user():
+            flash(gettext('You do not have permission to perform this action.'), 'error')
+            return redirect(self.get_url('.index_view'))
         child_id = request.args.get('id')
         child_model_view = ChildView(Child, db.session)
         gift_model_view = BaseView(Gift, db.session)
@@ -479,16 +569,34 @@ class ChildView(BaseView):
         )
 
 
-class ChildArchiveView(ChildView):
+class _ReadOnlyArchiveMixin:
+    """
+    Makes an archive view fully read-only for ALL users (including full admins).
+    Archive tables hold past-season history and must never be created, edited,
+    or deleted through the admin. This locks every write path: the create/edit/
+    delete buttons, inline list editing, inline sub-models, and bulk actions.
+    """
+    can_create = False
     can_edit = False
-    column_list = ChildView.column_list + ['year']
-    column_export_list = ChildView.column_export_list + ['year']
-    column_filters =  util.get_child_filters(ChildArchive, SponsorArchive, ParentArchive)
+    can_delete = False
+    # No inline (x-editable) list editing and no inline sub-model editing.
+    column_editable_list = []
+    inline_models = None
+
+    def is_action_allowed(self, name):
+        # Block all bulk actions (they would modify archived rows).
+        return False
+
+
+class ChildArchiveView(_ReadOnlyArchiveMixin, ChildView):
+    column_list = ['archive_year'] + ChildView.column_list
+    column_export_list = ChildView.column_export_list + ['archive_year']
+    column_filters =  util.get_child_filters(ChildArchive, SponsorArchive, ParentArchive, include_year=True)
     column_searchable_list = [GiftArchive.gift]
-    inline_models = [(GiftArchive, dict(form_columns=['id', 'gift']))]
-    column_formatters = None
+    column_formatters = {'note': util.note_preview_formatter}
     column_formatters_export = None
     column_extra_row_actions = None
+    column_labels = dict(ChildView.column_labels, archive_year='Season Year')
     # To remove the custom page, override the method and set it to None
     split_gifts = None
 
@@ -516,9 +624,10 @@ class ParentView(BaseView):
     }
 
 
-class ParentArchiveView(ParentView):
-    can_edit = False
-    column_filters = util.get_parent_filters(ParentArchive)
+class ParentArchiveView(_ReadOnlyArchiveMixin, ParentView):
+    column_list = ['archive_year', 'first_name', 'last_name', 'phone', 'email', 'gift_delivery']
+    column_filters = util.get_parent_filters(ParentArchive, include_year=True)
+    column_labels = dict(ParentView.column_labels, archive_year='Season Year')
 
 
 class GiftView(BaseView):
@@ -575,10 +684,11 @@ class GiftView(BaseView):
             flash(gettext('Failed to update received status on gifts. %(error)s', error=str(ex)), 'error')
 
 
-class GiftArchiveView(GiftView):
-    can_edit = False
+class GiftArchiveView(_ReadOnlyArchiveMixin, GiftView):
     CHILD_MODEL = ChildArchive
-    column_filters = util.get_gift_filters(GiftArchive, CHILD_MODEL)
+    column_list = ['archive_year'] + GiftView.column_list
+    column_filters = util.get_gift_filters(GiftArchive, CHILD_MODEL, include_year=True)
+    column_labels = dict(GiftView.column_labels, archive_year='Season Year')
     receive_gift = None
 
 
@@ -602,6 +712,13 @@ class SponsorView(BaseView):
     }
 
 
+class SponsorArchiveView(_ReadOnlyArchiveMixin, SponsorView):
+    column_list = ['archive_year', 'first_name', 'last_name', 'phone', 'email', 'children']
+    column_formatters = {'children': util.sponsor_archive_children_formatter}
+    column_filters = util.get_sponsor_archive_filters(SponsorArchive)
+    column_labels = {'archive_year': 'Season Year'}
+
+
 class SponsorRequestView(BaseView):
     form_columns = ['first_name', 'last_name', 'phone', 'email', 'request_count', 'preferences']
     form_overrides = {
@@ -620,10 +737,24 @@ class SponsorRequestView(BaseView):
     }
 
 
+class SponsorRequestArchiveView(_ReadOnlyArchiveMixin, SponsorRequestView):
+    column_list = ['archive_year', 'first_name', 'last_name', 'phone', 'email',
+                   'request_count', 'preferences']
+    column_filters = util.get_sponsor_request_archive_filters(SponsorRequestArchive)
+    column_labels = {'request_count': 'Wishlists Requested', 'archive_year': 'Season Year'}
+
+
 class GiftFulfillmentView(BaseView):
     can_edit = True
     can_create = False
     can_delete = False
+
+    def is_action_allowed(self, name):
+        # Bulk actions modify data, so read-only users can't run them.
+        if is_readonly_user():
+            return False
+        return super().is_action_allowed(name)
+
     column_display_actions = False
     # extra_js = ['/static/js/list-refresh.js']
     list_template = 'admin/list-refresh.html'
@@ -648,5 +779,130 @@ class GiftFulfillmentView(BaseView):
     }
 
 
+class GiftFulfillmentArchiveView(_ReadOnlyArchiveMixin, GiftFulfillmentView):
+    CHILD_MODEL = ChildArchive
+    # Plain list template (no inline-edit refresh script needed when read-only).
+    list_template = 'admin/model/list.html'
+    column_display_actions = False
+    column_editable_list = []
+    column_list = [
+        'archive_year', 'child_id', 'child.last_name', 'child.first_name',
+        'is_received', 'received_date', 'is_pickup', 'pickup_date'
+    ]
+    column_sortable_list = [
+        'archive_year', 'child_id', 'child.first_name', 'child.last_name',
+        'is_received', 'received_date', 'is_pickup', 'pickup_date'
+    ]
+    column_filters = util.get_gift_fulfillment_archive_filters(GiftFulfillmentArchive, ChildArchive)
+    column_labels = {
+        "archive_year": "Season Year",
+        "is_pickup": "Picked Up",
+        "is_received": "Gifts Received",
+        "child.first_name": "First Name",
+        "child.last_name": "Last Name"
+    }
+
+
 class MiscView(BaseView):
     column_display_pk = True
+
+
+class SiteSettingView(BaseView):
+    """
+    Admin editor for the single site-settings row. The list page is overridden
+    to display one row per individual setting (Name / Value), instead of the
+    default one-row-per-record table. The edit form is unchanged -- it still
+    edits the single SiteSetting row with proper date/time pickers.
+    """
+    can_create = False
+    can_delete = False
+    can_view_details = False
+
+    # Only the edit form matters for field config; the list is custom-rendered.
+    form_columns = ['child_signup_open', 'child_signup_deadline',
+                    'gift_pickup_date', 'gift_pickup_start', 'gift_pickup_end']
+    # Render the two pickup times as 12-hour AM/PM dropdowns (whole hours).
+    form_overrides = {
+        'gift_pickup_start': TwelveHourTimeField,
+        'gift_pickup_end': TwelveHourTimeField,
+    }
+    # Use native HTML5 date pickers with an explicit, matching parse format so
+    # the deadline and pickup date round-trip cleanly on save.
+    form_args = {
+        'child_signup_deadline': {
+            'format': '%Y-%m-%d',
+            'render_kw': {'type': 'date'},
+        },
+        'gift_pickup_date': {
+            'format': '%Y-%m-%d',
+            'render_kw': {'type': 'date'},
+        },
+    }
+    column_labels = {
+        'child_signup_open': 'Child Signup Open',
+        'child_signup_deadline': 'Child Signup Deadline',
+        'gift_pickup_date': 'Gift Pickup Date',
+        'gift_pickup_start': 'Gift Pickup Start Time',
+        'gift_pickup_end': 'Gift Pickup End Time',
+    }
+    column_descriptions = {
+        'child_signup_open': 'Master switch. Uncheck to immediately close child signup.',
+        'child_signup_deadline': 'Last day signups are accepted (inclusive). Leave blank for no date limit.',
+        'gift_pickup_date': 'Date gifts are picked up. Shown on the site like "Friday, December 12th".',
+        'gift_pickup_start': 'Start of the pickup window (e.g. 9:00 AM).',
+        'gift_pickup_end': 'End of the pickup window (e.g. 5:00 PM). Together these display like "9am-5pm".',
+    }
+
+    @expose('/')
+    def index_view(self):
+        """Render the settings as one row per setting (custom display)."""
+        setting = SiteSetting.get()
+
+        def fmt_date(d):
+            return d.strftime('%A, %B ') + setting._ordinal(d.day) if d else '—'
+
+        def fmt_time(t):
+            return setting._format_time(t) if t else '—'
+
+        settings_rows = [
+            {
+                'label': 'Child Signup',
+                'value': 'Open' if setting.child_signup_open else 'Closed',
+                'note': 'Master switch for accepting child registrations.',
+            },
+            {
+                'label': 'Child Signup Deadline',
+                'value': setting.child_signup_deadline_display or '—',
+                'note': 'Signups close automatically after this date. Blank = no limit.',
+            },
+            {
+                'label': 'Gift Pickup Date',
+                'value': fmt_date(setting.gift_pickup_date),
+                'note': 'Date gifts are picked up.',
+            },
+            {
+                'label': 'Gift Pickup Start Time',
+                'value': fmt_time(setting.gift_pickup_start),
+                'note': 'Start of the pickup window.',
+            },
+            {
+                'label': 'Gift Pickup End Time',
+                'value': fmt_time(setting.gift_pickup_end),
+                'note': 'End of the pickup window.',
+            },
+            {
+                'label': 'Gift Pickup (as shown on site)',
+                'value': setting.gift_pickup_display or '—',
+                'note': 'The combined text foster families see.',
+            },
+        ]
+
+        # Link the Edit button to the standard Flask-Admin edit form for this
+        # single row.
+        edit_url = url_for('.edit_view', id=setting.id)
+
+        return self.render(
+            'admin/site-settings-list.html',
+            settings_rows=settings_rows,
+            edit_url=edit_url,
+        )

@@ -4,7 +4,7 @@ import sqlite3
 from datetime import datetime, timezone
 
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import extract, event, inspect
+from sqlalchemy import extract, event, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy_utils import PhoneNumberType
 from sqlalchemy.orm import validates
@@ -191,8 +191,8 @@ class Child(db.Model):
 def child_id_before_insert(mapper, connection, target):
     if target.child_id is None:
         potential_values = list(range(CHILD_ID_START_VALUE, CHILD_ID_END_VALUE + 1))
-        existing_values = connection.execute(db.DDL(
-            f"SELECT child_id FROM child where child_id;")
+        existing_values = connection.execute(
+            text("SELECT child_id FROM child WHERE child_id IS NOT NULL")
         ).scalars().all()
 
         # Remove non-numeric characters from the child ids
@@ -210,8 +210,9 @@ def child_id_before_insert(mapper, connection, target):
 
 @event.listens_for(Child, 'after_insert')
 def child_id_after_insert(mapper, connection, target):
-    connection.execute(db.DDL(
-        f"INSERT INTO gift_fulfillment (child_id) values ('{target.child_id}');")
+    connection.execute(
+        text("INSERT INTO gift_fulfillment (child_id) VALUES (:cid)"),
+        {"cid": target.child_id},
     )
 
 
@@ -221,8 +222,9 @@ def child_id_after_update(mapper, connection, target):
     old_values = inspect(target).committed_state
     new_values = {key: getattr(target, key) for key in old_values.keys() if hasattr(target, key)}
     if 'child_id' in old_values.keys() and 'is_split' not in old_values.keys():
-        connection.execute(db.DDL(
-            f"UPDATE gift SET child_id = '{new_values['child_id']}' WHERE child_id = '{old_values['child_id']}';")
+        connection.execute(
+            text("UPDATE gift SET child_id = :new_cid WHERE child_id = :old_cid"),
+            {"new_cid": new_values['child_id'], "old_cid": old_values['child_id']},
         )
 
 
@@ -230,7 +232,13 @@ def child_id_after_update(mapper, connection, target):
 class ChildArchive(db.Model):
     __tablename__ = "child_archive"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    child_id = db.Column(db.Integer, unique=True, nullable=False)
+    # child_id repeats every season, so it is NOT unique on its own here.
+    # Uniqueness is per-season via the (child_id, archive_year) constraint below.
+    # It is a String to match the live Child.child_id type.
+    child_id = db.Column(db.String, nullable=False)
+    # Season year this row belongs to (set by the archive process). Used to make
+    # child_id unique per season and to join gifts/fulfillment to the right year.
+    archive_year = db.Column(db.Integer, nullable=False)
     is_split =  db.Column(db.Boolean, default=False)
     first_name = db.Column(db.String, nullable=False)
     last_name = db.Column(db.String, nullable=False)
@@ -256,11 +264,21 @@ class ChildArchive(db.Model):
     church = db.relationship('Church')
     sponsor_id = db.Column(db.Integer, db.ForeignKey("sponsor_archive.id"))
     sponsor = db.relationship('SponsorArchive', back_populates='children')
-    gifts = db.relationship('GiftArchive', back_populates='child', uselist=True, cascade="all, delete-orphan")
+    # Gifts link on BOTH child_id and archive_year (composite FK on GiftArchive)
+    # so a gift attaches to the correct season's child.
+    gifts = db.relationship(
+        'GiftArchive', back_populates='child', uselist=True,
+        cascade="all, delete-orphan",
+    )
     interests = db.Column(db.Text)
     note = db.Column(db.Text)
     create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
+    # When this row was moved into the archive (set by the archive process).
+    archive_date = db.Column(db.DateTime, default=None)
+    __table_args__ = (
+        db.UniqueConstraint('child_id', 'archive_year', name='_child_archive_uc'),
+    )
 
     @validates('first_name', 'last_name', 'dhs_case_worker')
     def convert_title(self, key, value):
@@ -347,6 +365,8 @@ class ParentArchive(db.Model):
     gift_delivery = db.Column(db.Boolean, default=False)
     create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
+    archive_date = db.Column(db.DateTime, default=None)
+    archive_year = db.Column(db.Integer)
     __table_args__ = (
         db.UniqueConstraint('first_name', 'last_name', 'email', name='_parent_archive_uc'),
     )
@@ -408,12 +428,22 @@ class Gift(db.Model):
 class GiftArchive(db.Model):
     __tablename__ = "gift_archive"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    child_id = db.Column(db.String, db.ForeignKey("child_archive.child_id"))
+    # Links to ChildArchive on (child_id, archive_year) -- see the relationship.
+    # No single-column FK because child_id is not unique on its own here.
+    child_id = db.Column(db.String, nullable=False)
+    archive_year = db.Column(db.Integer, nullable=False)
     child = db.relationship('ChildArchive', back_populates='gifts')
     gift = db.Column(db.String, nullable=False)
     received = db.Column(db.Boolean, default=False)
     create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
+    archive_date = db.Column(db.DateTime, default=None)
+    __table_args__ = (
+        db.ForeignKeyConstraint(
+            ['child_id', 'archive_year'],
+            ['child_archive.child_id', 'child_archive.archive_year'],
+        ),
+    )
 
     @validates('gift')
     def convert_title(self, key, value):
@@ -478,6 +508,10 @@ class SponsorArchive(db.Model):
     children = db.relationship('ChildArchive', back_populates='sponsor', uselist=True)
     create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
+    archive_date = db.Column(db.DateTime, default=None)
+    # Season year (set by the archive process), for consistency with the other
+    # archive tables and to support cross-links/filtering by season.
+    archive_year = db.Column(db.Integer)
     __table_args__ = (
         db.UniqueConstraint('first_name', 'last_name', 'email', name='_sponsor_archive_uc'),
     )
@@ -493,6 +527,15 @@ class SponsorArchive(db.Model):
         if value is not None:
             return value.lower()
         return value
+
+    @hybrid_property
+    def year(self):
+        if self.create_date:
+            return self.create_date.year
+
+    @year.expression
+    def year(cls):
+        return extract('year', cls.create_date)
 
     def __repr__(self):
         return f'{self.last_name.title(), self.first_name.title()}'
@@ -535,6 +578,51 @@ class SponsorRequest(db.Model):
             return 'Name missing!'
 
 
+class SponsorRequestArchive(db.Model):
+    __tablename__ = "sponsor_request_archive"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    first_name = db.Column(db.String, nullable=False)
+    last_name = db.Column(db.String, nullable=False)
+    phone = db.Column(PhoneNumberType(), nullable=False)
+    email = db.Column(db.String, nullable=False)
+    request_count = db.Column(db.Integer, default=1)
+    preferences = db.Column(db.Text)
+    create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
+    archive_date = db.Column(db.DateTime, default=None)
+    archive_year = db.Column(db.Integer)
+    __table_args__ = (
+        db.UniqueConstraint('first_name', 'last_name', 'email', name='_sponsor_request_archive_uc'),
+    )
+
+    @validates('first_name', 'last_name')
+    def normalize_names(self, key, value):
+        if value is not None:
+            return value.title()
+        return value
+
+    @validates('email')
+    def normalize_email(self, key, value):
+        if value is not None:
+            return value.lower()
+        return value
+
+    @hybrid_property
+    def year(self):
+        if self.create_date:
+            return self.create_date.year
+
+    @year.expression
+    def year(cls):
+        return extract('year', cls.create_date)
+
+    def __str__(self):
+        if self.first_name and self.last_name:
+            return f'{self.last_name.title(), self.first_name.title()}'
+        else:
+            return 'Name missing!'
+
+
 class GiftFulfillment(db.Model):
     __tablename__ = "gift_fulfillment"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -551,29 +639,187 @@ def gift_fulfillment_after_update(mapper, connection, target):
     new_values = {key: getattr(target, key) for key in old_values.keys() if hasattr(target, key)}
     if 'is_received' in old_values.keys():
         if new_values.get('is_received'):
-            sql_rec_datetime = "DATETIME('now')"
+            connection.execute(
+                text("UPDATE gift_fulfillment SET received_date = DATETIME('now') WHERE id = :id"),
+                {"id": target.id},
+            )
         else:
-            sql_rec_datetime = "NULL"
-        connection.execute(db.DDL(
-            f"UPDATE gift_fulfillment SET received_date = {sql_rec_datetime} WHERE id = '{target.id}';")
-        )
+            connection.execute(
+                text("UPDATE gift_fulfillment SET received_date = NULL WHERE id = :id"),
+                {"id": target.id},
+            )
     if 'is_pickup' in old_values.keys():
         if new_values.get('is_pickup'):
-            sql_pu_datetime = "DATETIME('now')"
+            connection.execute(
+                text("UPDATE gift_fulfillment SET pickup_date = DATETIME('now') WHERE id = :id"),
+                {"id": target.id},
+            )
         else:
-            sql_pu_datetime = "NULL"
-        connection.execute(db.DDL(
-            f"UPDATE gift_fulfillment SET pickup_date = {sql_pu_datetime} WHERE id = '{target.id}';")
-        )
+            connection.execute(
+                text("UPDATE gift_fulfillment SET pickup_date = NULL WHERE id = :id"),
+                {"id": target.id},
+            )
 
 
 @event.listens_for(GiftFulfillment.__table__, 'after_create')
 def gift_fulfillment_after_create(target, connection, **kw):
-    existing_children_ids = connection.execute(db.DDL(
-        f"SELECT child_id FROM child;")
+    existing_children_ids = connection.execute(
+        text("SELECT child_id FROM child")
     ).scalars().all()
 
     for cid in existing_children_ids:
-        connection.execute(db.DDL(
-            f"INSERT INTO gift_fulfillment (child_id) values ('{cid}');")
+        connection.execute(
+            text("INSERT INTO gift_fulfillment (child_id) VALUES (:cid)"),
+            {"cid": cid},
         )
+
+
+class GiftFulfillmentArchive(db.Model):
+    __tablename__ = "gift_fulfillment_archive"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    # Links to ChildArchive on (child_id, archive_year); no single-column FK
+    # because child_id repeats across seasons.
+    child_id = db.Column(db.String, nullable=False)
+    archive_year = db.Column(db.Integer, nullable=False)
+    is_received = db.Column(db.Boolean, default=False)
+    received_date = db.Column(db.DateTime, default=None)
+    is_pickup = db.Column(db.Boolean, default=False)
+    pickup_date = db.Column(db.DateTime, default=None)
+    create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    archive_date = db.Column(db.DateTime, default=None)
+    # Explicit relationship to the season's child (composite key) so list views
+    # can show child.first_name / child.last_name.
+    child = db.relationship(
+        'ChildArchive',
+        primaryjoin="and_(foreign(GiftFulfillmentArchive.child_id) == ChildArchive.child_id, "
+                    "foreign(GiftFulfillmentArchive.archive_year) == ChildArchive.archive_year)",
+        viewonly=True,
+        uselist=False,
+    )
+    __table_args__ = (
+        db.ForeignKeyConstraint(
+            ['child_id', 'archive_year'],
+            ['child_archive.child_id', 'child_archive.archive_year'],
+        ),
+    )
+
+    @hybrid_property
+    def year(self):
+        if self.create_date:
+            return self.create_date.year
+
+    @year.expression
+    def year(cls):
+        return extract('year', cls.create_date)
+
+class SiteSetting(db.Model):
+    """
+    Single-row table holding site-wide settings the admin can edit.
+
+    Controls whether child signup is open (signup is open when
+    child_signup_open is True AND today is on/before child_signup_deadline,
+    or no deadline is set), and holds the gift pickup date/time text shown on
+    the site. The admin can let the date close signups automatically, force it
+    closed early, reopen/extend it, and edit the pickup details.
+    """
+    __tablename__ = "site_setting"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    # Master on/off switch for child signup (manual override).
+    child_signup_open = db.Column(db.Boolean, nullable=False, default=True)
+    # Last day signups are accepted (inclusive). Null means "no date limit".
+    child_signup_deadline = db.Column(db.Date, default=None)
+    # Gift pickup window, stored as native date/time fields. Rendered on the
+    # site as e.g. "Friday, December 12th 9am-5pm" by gift_pickup_display.
+    gift_pickup_date = db.Column(db.Date, default=None)
+    gift_pickup_start = db.Column(db.Time, default=None)
+    gift_pickup_end = db.Column(db.Time, default=None)
+    create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
+
+    def __repr__(self):
+        return "Site Settings"
+
+    @classmethod
+    def get(cls):
+        """Return the singleton settings row, creating it if absent."""
+        setting = db.session.query(cls).order_by(cls.id.asc()).first()
+        if setting is None:
+            setting = cls(child_signup_open=True, child_signup_deadline=None)
+            db.session.add(setting)
+            db.session.commit()
+        return setting
+
+    @hybrid_property
+    def is_child_signup_open(self):
+        """True if child signup should currently accept submissions."""
+        if not self.child_signup_open:
+            return False
+        if self.child_signup_deadline is None:
+            return True
+        return datetime.now(timezone.utc).date() <= self.child_signup_deadline
+
+    @staticmethod
+    def _ordinal(n):
+        # 1 -> "1st", 2 -> "2nd", 11 -> "11th", 22 -> "22nd", etc.
+        if 11 <= (n % 100) <= 13:
+            suffix = "th"
+        else:
+            suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+        return f"{n}{suffix}"
+
+    @property
+    def child_signup_deadline_display(self):
+        """
+        Format the deadline like the previous config string (e.g. "Nov 2nd").
+        Returns an empty string when no deadline is set.
+        """
+        if self.child_signup_deadline is None:
+            return ""
+        d = self.child_signup_deadline
+        return f"{d.strftime('%b')} {self._ordinal(d.day)}"
+
+    @staticmethod
+    def _format_time(t, with_meridiem=True):
+        """
+        Format a time like the legacy string: hour only when minutes are zero
+        ("9", "5"), hour:minutes otherwise ("9:30"), lowercase am/pm appended
+        only when with_meridiem is True ("5pm"). 12-hour clock, no leading zero.
+        """
+        if t is None:
+            return ""
+        hour12 = t.hour % 12 or 12
+        if t.minute:
+            base = f"{hour12}:{t.minute:02d}"
+        else:
+            base = f"{hour12}"
+        if with_meridiem:
+            base += "am" if t.hour < 12 else "pm"
+        return base
+
+    @property
+    def gift_pickup_display(self):
+        """
+        Rebuild the display string from the date/time parts, e.g.
+        "Friday, December 12th 9am-5pm". Each piece is optional: if only the
+        date is set you get "Friday, December 12th"; if only times are set you
+        get the time range alone. Returns "" when nothing is set.
+        """
+        parts = []
+
+        if self.gift_pickup_date is not None:
+            d = self.gift_pickup_date
+            parts.append(f"{d.strftime('%A, %B')} {self._ordinal(d.day)}")
+
+        start, end = self.gift_pickup_start, self.gift_pickup_end
+        time_str = ""
+        if start is not None and end is not None:
+            time_str = f"{self._format_time(start)}-{self._format_time(end)}"
+        elif start is not None:
+            time_str = self._format_time(start)
+        elif end is not None:
+            time_str = self._format_time(end)
+
+        if time_str:
+            parts.append(time_str)
+
+        return " ".join(parts)

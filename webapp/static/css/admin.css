@@ -12,3 +12,109 @@
     margin-left: auto;
     max-width: 100%;
 }
+/* ---- Comment / note list cells ---------------------------------------- */
+/* Layout: truncated text on the left, a small edit pencil on the right. */
+.note-cell-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 240px;
+    max-width: 440px;
+}
+
+.note-display {
+    flex: 1 1 auto;
+    min-width: 0;            /* allow the clamp to shrink inside flex */
+}
+
+/* The preview text, clamped to two lines with an ellipsis. Slightly smaller and
+   tighter than the table default so more of the note fits in the two lines. */
+.note-cell {
+    cursor: help;            /* hints that a tooltip (full text) is available */
+}
+
+.note-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;   /* show at most two lines */
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal;
+    word-break: break-word;
+    font-size: 0.8rem;       /* smaller than the row default */
+    line-height: 1.3;
+    color: #495057;          /* slightly muted -- reads as secondary info */
+}
+
+/* Give the Notes column room in the table layout. Targets the cell + header
+   that Flask-Admin emits for the 'note' column (class col-note). */
+td.col-note,
+th.column-header.col-note,
+.col-note {
+    min-width: 240px;
+    max-width: 440px;
+}
+
+/* The "more text exists" indicator. */
+.note-more {
+    color: #6c757d;
+    font-weight: 700;
+    margin-left: 1px;
+}
+
+.note-empty {
+    color: #adb5bd;
+}
+
+/* Edit trigger: a small pencil icon instead of a blue underlined link. The
+   x-editable anchor still CONTAINS the real note text (needed so the editor
+   prepopulates and positions correctly); we hide that text with font-size:0 and
+   draw a pencil glyph via ::before. */
+.note-edit-trigger {
+    flex: 0 0 auto;
+    line-height: 1;
+}
+
+.note-edit-trigger a,
+.note-edit-trigger a:link,
+.note-edit-trigger a:visited,
+.note-edit-trigger a:hover,
+.note-edit-trigger a.editable {
+    color: #6c757d;
+    text-decoration: none !important;
+    border-bottom: none !important;
+    font-size: 0 !important;        /* hide the real note text in the trigger */
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.note-edit-trigger a::before {
+    content: "\270E";               /* ✎ pencil */
+    font-size: 1.05rem;             /* restore size for the glyph only */
+    display: inline-block;
+}
+
+.note-edit-trigger a:hover {
+    color: #0d6efd;
+}
+
+/* ---- Inline-edit (x-editable) textarea sizing ------------------------- */
+/* The note editor uses Flask-Admin's default anchored popover (positioned next
+   to the pencil; kept on screen via container:'body' + left placement in JS).
+   We only size the textarea so notes are comfortable to edit and resizable. */
+.editable-container .editableform textarea,
+.editable-container textarea {
+    resize: both;
+    width: 300px;             /* initial width; user can drag wider/narrower */
+    max-width: 80vw;
+    min-height: 110px;
+    box-sizing: border-box;
+}
+
+/* Width backstop so the anchored popover can't itself exceed the viewport on a
+   narrow window. This does not move the popover -- placement stays anchored. */
+.editable-container.editable-popup,
+.editable-container.popup,
+.editable-container.popover {
+    max-width: 90vw;
+}

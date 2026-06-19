@@ -18,7 +18,7 @@ except ImportError:
 
 from .config import (
     db_defaults, CONTACT_PHONE, CONTACT_EMAIL, CONTACT_NAME, FACEBOOK_URL, AMAZON_WISHLIST, VOLUNTEER_LINK,
-    DONATE_NAV_HTML, GIFT_DROPOFF_LOCATIONS, GIFT_PICKUP_DATETIME, GIFT_PICKUP_LOCATION, CHILD_SIGNUP_DEADLINE,
+    DONATE_NAV_HTML, GIFT_DROPOFF_LOCATIONS, GIFT_PICKUP_LOCATION,
     AUTHNET_API_LOGIN_ID, AUTHNET_TRANSACTION_KEY, AUTHNET_SANDBOX, AUTHNET_API_URL, AUTHNET_HOSTED_FORM_URL,
     AUTHNET_RETURN_PATH, AUTHNET_CANCEL_PATH, AUTHNET_ORDER_DESCRIPTION,
     PAYPAL_PAYMENT_URL, PAYPAL_HOSTED_BUTTON_ID, PAYPAL_BUSINESS,
@@ -56,7 +56,9 @@ def setup_flask_admin(app_instance, session):
     admin.add_view(vw.GiftView(mdl.Gift, session, name='Current', category='Gifts'))
     admin.add_view(vw.GiftArchiveView(mdl.GiftArchive, session, name='Archive', category='Gifts'))
     admin.add_view(vw.SponsorView(mdl.Sponsor, session, name='Registered', category='Sponsors'))
+    admin.add_view(vw.SponsorArchiveView(mdl.SponsorArchive, session, name='Registered Archive', category='Sponsors'))
     admin.add_view(vw.SponsorRequestView(mdl.SponsorRequest, session, name='Requests', category='Sponsors'))
+    admin.add_view(vw.SponsorRequestArchiveView(mdl.SponsorRequestArchive, session, name='Requests Archive', category='Sponsors'))
     admin.add_view(vw.MiscView(mdl.ShoeSize, session, name='Shoe Sizes', category='Form Options'))
     admin.add_view(vw.MiscView(mdl.ClothingSize, session, name='Clothing Sizes', category='Form Options'))
     admin.add_view(vw.MiscView(mdl.Race, session, name='Ethnicity', category='Form Options'))
@@ -64,6 +66,8 @@ def setup_flask_admin(app_instance, session):
     admin.add_view(vw.MiscView(mdl.DhsOffice, session, name='DHS Office', category='Form Options'))
     admin.add_view(vw.MiscView(mdl.Church, session, name='Church', category='Form Options'))
     admin.add_view(vw.GiftFulfillmentView(mdl.GiftFulfillment, session, name='Gift Fulfillment', category='Children'))
+    admin.add_view(vw.GiftFulfillmentArchiveView(mdl.GiftFulfillmentArchive, session, name='Gift Fulfillment Archive', category='Children'))
+    admin.add_view(vw.SiteSettingView(mdl.SiteSetting, session, name='Site Settings', category='Settings'))
 
     return app_instance
 
@@ -88,15 +92,45 @@ def create_app(debug=True):
     except OSError:
         pass
 
-    from .models import db
+    from .models import db, SiteSetting
 
     # initialize flask addons
     db.init_app(app)
 
+    # --- security extensions: login, CSRF, rate limiting --------------------
+    from .auth import login_manager, register_auth
+    login_manager.init_app(app)
+
+    from flask_wtf.csrf import CSRFProtect
+    csrf = CSRFProtect(app)
+    app.extensions['csrf'] = csrf
+
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+    limiter = Limiter(
+        key_func=get_remote_address,
+        app=app,
+        default_limits=[],  # no global limit; we apply limits per-route
+        storage_uri="memory://",
+    )
+    app.extensions['limiter'] = limiter
+
+    # Register login/logout routes (login route is rate-limited).
+    register_auth(app, limiter=limiter)
+
     # first time database setup
     with app.app_context():
-        # Create the database if it doesn't already exist
-        if not os.path.exists(app.config['SQLITE_DATABASE_PATH']):
+        # Ensure the directory that will hold the SQLite file exists. This
+        # matters when DATABASE_PATH points outside the repo (production), where
+        # the target folder (e.g. /var/lib/holidayhopetree) must be present.
+        db_path = app.config.get('DATABASE_PATH')
+        if db_path:
+            db_dir = os.path.dirname(db_path)
+            if db_dir and not os.path.exists(db_dir):
+                os.makedirs(db_dir, exist_ok=True)
+        # Create the database only if it doesn't already exist, so an existing
+        # production database is never overwritten or re-seeded on deploy.
+        if db_path and not os.path.exists(db_path):
             db.create_all()
             # create a table name to class mapper
             tbl_to_cls = {}
@@ -114,7 +148,35 @@ def create_app(debug=True):
                         db.session.add(model)
                     db.session.commit()
 
+        # Ensure newly added tables exist even on a pre-existing database.
+        # create_all() only creates missing tables; it never alters or drops
+        # existing ones, so running it every startup is safe and idempotent.
+        db.create_all()
+
+        # Ensure the single SiteSetting row exists with safe, neutral defaults
+        # (signups open, no deadline, no pickup window). The admin sets the real
+        # deadline and pickup window in the "Site Settings" screen. We never
+        # seed dates from code, so a new season never starts with stale values.
+        if db.session.query(SiteSetting).first() is None:
+            db.session.add(SiteSetting(child_signup_open=True))
+            db.session.commit()
+
     app = setup_flask_admin(app, db.session)
+
+    # Rate-limit the public, unauthenticated form endpoints to curb spam and
+    # automated abuse. Limits are applied by registered endpoint name on the
+    # view functions Flask-Admin created.
+    _public_form_endpoints = [
+        'register.parent', 'register.child',
+        'register.sponsor', 'register.sponsor_request',
+        'admin.donate_authnet',  # IndexView donate POST (base Admin index endpoint)
+    ]
+    for _ep in _public_form_endpoints:
+        _vf = app.view_functions.get(_ep)
+        if _vf is not None:
+            app.view_functions[_ep] = limiter.limit(
+                "8 per minute; 40 per hour"
+            )(_vf)
 
     # define contact for use in jinja templates
     app.config['CONTACT_PHONE'] = CONTACT_PHONE
@@ -144,8 +206,20 @@ def create_app(debug=True):
 
     app.config['GIFT_DROPOFF_LOCATIONS'] = GIFT_DROPOFF_LOCATIONS
     app.config['GIFT_PICKUP_LOCATION'] = GIFT_PICKUP_LOCATION
-    app.config['GIFT_PICKUP_DATETIME'] = GIFT_PICKUP_DATETIME
-    app.config['CHILD_SIGNUP_DEADLINE'] = CHILD_SIGNUP_DEADLINE
+
+    @app.context_processor
+    def inject_site_settings():
+        # Make the admin-managed gift pickup and signup deadline available to
+        # every template, formatted like the old config strings.
+        try:
+            setting = SiteSetting.get()
+            return {
+                'gift_pickup_datetime': setting.gift_pickup_display,
+                'child_signup_deadline': setting.child_signup_deadline_display,
+            }
+        except Exception:
+            # If the settings row/table isn't available yet, fail soft.
+            return {'gift_pickup_datetime': '', 'child_signup_deadline': ''}
 
     @app.shell_context_processor
     def shell_context():
