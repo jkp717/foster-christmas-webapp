@@ -1,0 +1,36 @@
+{% extends 'admin/base.html' %}
+
+{# Custom list view for the singleton SiteSetting row: instead of one table row
+   per record (there is only ever one), show one row per individual setting as
+   a Name / Value pair, with a single Edit button. The underlying storage is
+   unchanged -- this only changes the display. #}
+
+{% block body %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="m-0">Site Settings</h3>
+    {% if edit_url %}
+    <a href="{{ edit_url }}" class="btn btn-primary">Edit Settings</a>
+    {% endif %}
+  </div>
+
+  <table class="table table-striped table-bordered">
+    <thead>
+      <tr>
+        <th style="width: 30%;">Setting</th>
+        <th style="width: 45%;">Value</th>
+        <th style="width: 25%;">Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in settings_rows %}
+      <tr>
+        <th scope="row">{{ row.label }}</th>
+        <td>{{ row.value }}</td>
+        <td><small class="text-muted">{{ row.note }}</small></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
