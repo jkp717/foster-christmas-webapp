@@ -1,0 +1,4 @@
+# Test-only dependency. Install into the same venv that has the app deps:
+#   pip install -r requirements-dev.txt
+# (The application dependencies come from requirements.txt.)
+pytest>=8.0

@@ -75,6 +75,21 @@ def archive_season_command(yes):
     new archive ids are used when archiving children. Gifts and gift_fulfillment
     map to children by the business key child_id (a string), which is preserved.
     """
+    # Delegate to the importable core so the same logic can be unit-tested
+    # directly against a test app context (without the Click/FlaskGroup wrapper
+    # building its own app).
+    run_archive_season(skip_confirm=yes, echo=click.echo, confirm=click.confirm)
+
+
+def run_archive_season(skip_confirm=False, echo=print, confirm=None):
+    """
+    Core season-archive routine. Returns the number of records archived.
+
+    Parameters let it run both interactively (CLI) and non-interactively
+    (tests): `echo` receives progress lines, and `confirm` (if provided and
+    skip_confirm is False) is called for the yes/no prompt. Pass skip_confirm=
+    True (the test default) to run without prompting.
+    """
     from webapp.models import (
         db, Child, ChildArchive, Parent, ParentArchive, Gift, GiftArchive,
         Sponsor, SponsorArchive, SponsorRequest, SponsorRequestArchive,
@@ -91,24 +106,24 @@ def archive_season_command(yes):
     }
     total = sum(counts.values())
 
-    click.echo("")
-    click.echo("This will ARCHIVE and then DELETE the current season's data:")
+    echo("")
+    echo("This will ARCHIVE and then DELETE the current season's data:")
     for name, n in counts.items():
-        click.echo(f"  {name:>18}: {n}")
-    click.echo(f"  {'TOTAL':>18}: {total}")
-    click.echo("")
-    click.echo("Reference tables (gender, race, fav_color, shoe_size, clothing_size,")
-    click.echo("dhs_office, church) and site_setting are NOT touched.")
-    click.echo("")
+        echo(f"  {name:>18}: {n}")
+    echo(f"  {'TOTAL':>18}: {total}")
+    echo("")
+    echo("Reference tables (gender, race, fav_color, shoe_size, clothing_size,")
+    echo("dhs_office, church) and site_setting are NOT touched.")
+    echo("")
 
     if total == 0:
-        click.echo("Nothing to archive. Exiting.")
-        return
+        echo("Nothing to archive. Exiting.")
+        return 0
 
-    if not yes:
-        if not click.confirm("Proceed with archive + wipe?", default=False):
-            click.echo("Aborted. No changes made.")
-            return
+    if not skip_confirm:
+        if confirm is None or not confirm("Proceed with archive + wipe?", default=False):
+            echo("Aborted. No changes made.")
+            return 0
 
     run_ts = datetime.now(timezone.utc)
 
@@ -119,7 +134,7 @@ def archive_season_command(yes):
         # run timestamp's year if there are no children.
         child_years = [c.create_date.year for c in Child.query.all() if c.create_date]
         season_year = max(child_years) if child_years else run_ts.year
-        click.echo(f"Season year for this archive run: {season_year}")
+        echo(f"Season year for this archive run: {season_year}")
 
         # 1) Sponsors -> SponsorArchive, capturing live_id -> archive obj
         sponsor_map = {}
@@ -197,13 +212,14 @@ def archive_season_command(yes):
         db.session.commit()
     except Exception as exc:
         db.session.rollback()
-        click.echo(f"ERROR: archive failed and was rolled back. No data changed.\n  {exc}")
+        echo(f"ERROR: archive failed and was rolled back. No data changed.\n  {exc}")
         raise
 
-    click.echo("")
-    click.echo(f"Archived {total} record(s) with archive_date {run_ts.isoformat()} "
-               f"and wiped the live tables. Ready for a new season.")
-    click.echo("")
+    echo("")
+    echo(f"Archived {total} record(s) with archive_date {run_ts.isoformat()} "
+         f"and wiped the live tables. Ready for a new season.")
+    echo("")
+    return total
 
 @cli.command('db-create-all')
 def db_create_all():

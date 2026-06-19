@@ -72,7 +72,7 @@ def setup_flask_admin(app_instance, session):
     return app_instance
 
 
-def create_app(debug=True):
+def create_app(debug=True, config_override=None):
     app = Flask(__name__)
     if not debug:
         app.config.from_object('config.ProdConfig')
@@ -86,6 +86,12 @@ def create_app(debug=True):
             )
     else:
         app.config.from_object('config.DevConfig')
+    # Allow tests (or other callers) to override config AFTER the base config is
+    # loaded but BEFORE extensions and the database are initialized. This is how
+    # the test suite injects an in-memory SQLite URL, a known SECRET_KEY, and
+    # disables CSRF / rate limiting. Has no effect in normal use.
+    if config_override:
+        app.config.update(config_override)
     # ensure the instance folder exists
     try:
         os.makedirs(app.instance_path)
