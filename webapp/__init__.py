@@ -92,6 +92,20 @@ def create_app(debug=True, config_override=None):
     # disables CSRF / rate limiting. Has no effect in normal use.
     if config_override:
         app.config.update(config_override)
+
+    # Behind nginx (production), the app is reached over a Unix socket and nginx
+    # forwards the real scheme/client IP via X-Forwarded-Proto / X-Forwarded-For.
+    # Without ProxyFix, Flask would treat every request as plain HTTP from
+    # 127.0.0.1: url_for(_external=True) would emit http:// links, request.is_
+    # secure would be False, and Flask-Limiter would rate-limit on the proxy's
+    # IP (so per-IP limits become effectively global). Trust exactly ONE proxy
+    # hop (our single nginx layer). Not applied in debug/dev, where there is no
+    # proxy in front of the app.
+    if not debug:
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(
+            app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=0
+        )
     # ensure the instance folder exists
     try:
         os.makedirs(app.instance_path)
