@@ -20,7 +20,7 @@ from webapp.models import db, Gift, Child, Parent, DhsOffice, Gender, Race, Shoe
 import webapp.util as util
 import webapp.authnet as authnet
 from webapp.auth import _SecureViewMixin, is_readonly_user, is_comment_field
-from webapp.formfields import TwelveHourTimeField
+from webapp.formfields import TwelveHourTimeField, DeliverableEmail
 from webapp.config import GIFT_DELIVERY_DISCLAIMER, REGISTER_CHILD_DISCLAIMER, SPONSORSHIP_DISCLAIMER, \
     SPONSOR_CHILD_DISCLAIMER, SPONSOR_REQUEST_DISCLAIMER, CHILD_REGISTRY_HELPER_TEXT
 
@@ -127,6 +127,13 @@ class RegisterView(BaseView):
             return redirect(self.get_url('register.signup_closed'))
         model_view = ParentView(Parent, db.session)
         return_url = '/'
+
+        # Honeypot: a hidden 'website' field is rendered in the form. Real
+        # users never see or fill it; a value here means an automated/bot
+        # submission. Silently redirect away without creating a record (and
+        # without revealing that the trap was detected).
+        if request.method == 'POST' and (request.form.get('website') or '').strip():
+            return redirect(return_url)
 
         id = get_mdict_item_or_list(request.args, 'id')
         if id is not None:
@@ -603,6 +610,15 @@ class ChildArchiveView(_ReadOnlyArchiveMixin, ChildView):
 
 class ParentView(BaseView):
     form_columns = ['first_name', 'last_name', 'email', 'phone', 'gift_delivery']
+    # Add a deliverability check to the email field (rejects typos + dead
+    # domains). The honeypot is rendered as raw HTML below and validated in the
+    # public `parent` route by reading request.form directly, so it does not
+    # depend on WTForms field scaffolding.
+    form_args = {
+        'email': {
+            'validators': [DeliverableEmail()],
+        }
+    }
     # noinspection PyTypeChecker
     form_rules = {
         rules.NestedRule([
@@ -612,7 +628,18 @@ class ParentView(BaseView):
             rules.NestedRule(
                 [rules.HTML(f"""<small class="form-text text-muted">{GIFT_DELIVERY_DISCLAIMER}</small>"""),
                  'gift_delivery']
-            )
+            ),
+            # Honeypot: invisible to humans, auto-filled by naive bots. Rendered
+            # as raw HTML (not a WTForms field) and checked server-side in the
+            # route. aria-hidden + tabindex=-1 + autocomplete=off keep it away
+            # from real users and assistive tech.
+            rules.HTML(
+                '<input type="text" name="website" id="website" value="" '
+                'autocomplete="off" tabindex="-1" aria-hidden="true" '
+                'style="position:absolute !important;left:-9999px !important;'
+                'top:-9999px !important;width:1px;height:1px;opacity:0;'
+                'overflow:hidden;">'
+            ),
         ])
     }
     column_filters = util.get_parent_filters(Parent)
@@ -889,11 +916,6 @@ class SiteSettingView(BaseView):
                 'label': 'Gift Pickup End Time',
                 'value': fmt_time(setting.gift_pickup_end),
                 'note': 'End of the pickup window.',
-            },
-            {
-                'label': 'Gift Pickup (as shown on site)',
-                'value': setting.gift_pickup_display or '—',
-                'note': 'The combined text foster families see.',
             },
         ]
 

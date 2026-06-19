@@ -88,3 +88,76 @@ class TestSponsorSubmission:
                     Sponsor.email == "jamie.donor@example.com"
                 ).first()
                 assert found is not None
+
+
+class TestEmailValidator:
+    """Unit tests for the DeliverableEmail validator (syntax pass, no network)."""
+
+    def _run(self, value, check_deliverability=False):
+        from webapp.formfields import DeliverableEmail
+        from wtforms.validators import ValidationError
+
+        class _Field:
+            def __init__(self, data):
+                self.data = data
+
+        v = DeliverableEmail(check_deliverability=check_deliverability)
+        try:
+            v(None, _Field(value))
+            return True
+        except ValidationError:
+            return False
+
+    def test_malformed_no_at_rejected(self):
+        # "annjohnx1" style input (no @) must fail syntax.
+        assert self._run("annjohnx1") is False
+
+    def test_blank_is_skipped(self):
+        # Empty is left to DataRequired/Optional, so the validator passes.
+        assert self._run("") is True
+
+    def test_plausible_address_passes_syntax(self):
+        assert self._run("real.person@example.com") is True
+
+
+class TestHoneypot:
+    def test_honeypot_filled_blocks_submission(self, app, client):
+        """A bot that fills the hidden 'website' field is rejected: no Parent
+        row is created."""
+        from webapp.models import Parent
+        before = None
+        with app.app_context():
+            before = db.session.query(Parent).count()
+        resp = client.post(
+            "/register/",
+            data={
+                "first_name": "Bot",
+                "last_name": "Spammer",
+                "phone": "+15015550000",
+                "email": "bot@example.com",
+                "website": "http://spam.example",  # honeypot tripped
+            },
+            follow_redirects=False,
+        )
+        # Should not create a record; the form re-renders (200) rather than
+        # redirecting to the child step.
+        with app.app_context():
+            after = db.session.query(Parent).count()
+        assert after == before
+
+    def test_clean_submission_not_blocked_by_honeypot(self, app, client):
+        """An empty honeypot does not interfere with a normal submission."""
+        from webapp.models import Parent
+        resp = client.post(
+            "/register/",
+            data={
+                "first_name": "Real",
+                "last_name": "Parent",
+                "phone": "+15015551234",
+                "email": "real.parent@example.com",
+                "website": "",  # empty -> human
+            },
+            follow_redirects=False,
+        )
+        # Must not 500; either redirects to child step or re-renders.
+        assert resp.status_code in (200, 301, 302)
