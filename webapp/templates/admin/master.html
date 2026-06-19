@@ -1,0 +1,17 @@
+{# Custom admin master template. Flask-Admin resolves 'admin/master.html' from
+   the app's template folder before its own, so every admin view inherits this.
+   We extend Flask-Admin's real master (exposed as the admin_base_template
+   variable) and inject the GLOBAL admin stylesheet -- applied on all admin
+   views. View-specific CSS (e.g. the child list's full-width table) is still
+   loaded by that view's own template, so this does not change table widths. #}
+{% extends admin_base_template %}
+
+{% block head %}
+    {{ super() }}
+    {# Only load the admin-global styles on the actual admin area (mounted at
+       /admin). The public site's base template also extends this master, so we
+       must NOT apply the admin navbar/font changes there. #}
+    {% if request and request.path.startswith('/admin') %}
+    <link href="{{ url_for('static', filename='css/admin-global.css') }}?v=5" rel="stylesheet">
+    {% endif %}
+{% endblock %}

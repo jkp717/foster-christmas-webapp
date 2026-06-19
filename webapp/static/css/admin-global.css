@@ -1,0 +1,55 @@
+/* ==========================================================================
+   Global admin styles -- loaded on EVERY admin view via templates/admin/
+   master.html. Keep this file limited to changes that should apply site-wide
+   in the admin. View-specific overrides (e.g. the child list's full-width
+   table and note-cell styling) live in admin.css, loaded only by that view.
+   ========================================================================== */
+
+/* --- Full-width navbar on all admin views --------------------------------
+   Flask-Admin's layout (confirmed from rendered HTML) is a SINGLE shared
+   container wrapping both the navbar and the page content:
+
+       <div class="container">
+           <nav class="navbar ...">...</nav>
+           ... tabs / filters / table ...
+       </div>
+
+   So we can't just widen .container -- that would also widen the table, which
+   we must NOT do on non-child views. Instead we make ONLY the navbar break out
+   of the container to span the full viewport width (a "full-bleed"), while the
+   container and the table inside it keep their normal width.
+
+   The full-bleed: stretch the navbar to the full width of its container's
+   positioning context using symmetric negative margins computed with calc().
+   `calc(-50vw + 50%)` shifts each side out to the viewport edge *relative to
+   the centered container*, which avoids the horizontal-scrollbar overshoot
+   that a raw `100vw` width causes when a vertical scrollbar is present. No
+   body/container overflow hack is needed, so nothing clips the body-level
+   notes popover on the child list. */
+nav.navbar,
+.navbar.navbar-expand-lg {
+    position: relative;
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+    /* width follows from the symmetric negative margins; no explicit 100vw. */
+    border-radius: 0;
+    /* Re-add horizontal padding so the brand/links aren't flush to the edges. */
+    padding-left: 24px;
+    padding-right: 24px;
+}
+
+/* --- Table body font size ------------------------------------------------
+   Make the data inside table cells 0.9rem on all admin views. Targets body
+   cells only (td); header cells (th) are left at their default size. The
+   :not(.text-muted) / small carve-out keeps muted helper text unaffected. */
+.table tbody td,
+table.model-list tbody td {
+    font-size: 0.9rem;
+}
+
+/* Don't shrink small/muted helper text that may live inside a cell -- those
+   keep whatever size they were given. */
+.table tbody td small,
+.table tbody td .text-muted {
+    font-size: inherit;
+}
