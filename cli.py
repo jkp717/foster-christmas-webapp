@@ -226,6 +226,209 @@ def db_create_all():
     db.create_all()
 
 
+@cli.command('db-update-schema')
+@click.option('--apply', 'do_apply', is_flag=True, default=False,
+              help='Apply the additive changes. Without this, runs as a '
+                   'dry-run report (the default).')
+@click.option('--drop', 'do_drop', is_flag=True, default=False,
+              help='Also DROP orphan tables/columns (present in the DB but not '
+                   'in the models). Requires --apply and a typed confirmation.')
+def db_update_schema(do_apply, do_drop):
+    """
+    Sync the database schema to the SQLAlchemy models (the single source of
+    truth). Run this once on deploy after pulling code that changed models.
+
+    What it does:
+      * MISSING TABLES   -> created.
+      * MISSING COLUMNS  -> added (ALTER TABLE ADD COLUMN); if the model column
+                            has a scalar default, existing rows are backfilled.
+      * ORPHANS          -> columns/tables in the DB but not in the models are
+                            REPORTED. They are only dropped with --drop (plus
+                            --apply and a typed confirmation).
+      * RENAMES / TYPE CHANGES -> reflection cannot tell a rename from a
+                            drop+add, and SQLite cannot ALTER a column type in
+                            place, so these are only REPORTED, never auto-applied.
+                            Handle them with a deliberate, manual migration.
+
+    Default run is a DRY RUN: it prints the diff and changes nothing. Add
+    --apply to perform the additive changes. ALWAYS back up the database before
+    applying changes to production.
+    """
+    from sqlalchemy import inspect as sa_inspect, text as sa_text
+
+    engine = db.engine
+    insp = sa_inspect(engine)
+    dialect = engine.dialect
+
+    db_tables = set(insp.get_table_names())
+    model_tables = dict(db.metadata.tables)  # name -> Table (model truth)
+
+    missing_tables = []      # (table_name, Table)
+    missing_columns = []     # (table_name, Column)
+    orphan_tables = []       # table_name
+    orphan_columns = []      # (table_name, column_name)
+    type_mismatches = []     # (table_name, column_name, db_type, model_type)
+
+    # --- Tables in the models but not in the DB -> need creation.
+    for name, table in model_tables.items():
+        if name not in db_tables:
+            missing_tables.append((name, table))
+
+    # --- Tables in the DB but not in the models -> orphans.
+    for name in db_tables:
+        if name not in model_tables and name != 'sqlite_sequence':
+            orphan_tables.append(name)
+
+    # --- Column-level diff for tables that exist in BOTH.
+    for name, table in model_tables.items():
+        if name not in db_tables:
+            continue
+        db_cols = {c['name']: c for c in insp.get_columns(name)}
+        model_cols = {c.name: c for c in table.columns}
+
+        for col_name, col in model_cols.items():
+            if col_name not in db_cols:
+                missing_columns.append((name, col))
+            else:
+                # Best-effort type comparison (string form). SQLite is loosely
+                # typed, so treat this as advisory only.
+                try:
+                    model_type = col.type.compile(dialect=dialect).upper()
+                    db_type = str(db_cols[col_name]['type']).upper()
+                    base_model = model_type.split('(')[0]
+                    base_db = db_type.split('(')[0]
+                    if base_model and base_db and base_model != base_db:
+                        type_mismatches.append((name, col_name, db_type, model_type))
+                except Exception:
+                    pass
+
+        for col_name in db_cols:
+            if col_name not in model_cols:
+                orphan_columns.append((name, col_name))
+
+    # ---------------------------------------------------------------- report
+    def _bullet(items, fmt):
+        for it in items:
+            click.echo("    " + fmt(it))
+
+    click.echo("")
+    click.echo("Schema comparison (database vs. models):")
+    click.echo("")
+
+    if missing_tables:
+        click.echo(f"  Missing tables ({len(missing_tables)}) -- will be CREATED:")
+        _bullet(missing_tables, lambda t: t[0])
+    if missing_columns:
+        click.echo(f"  Missing columns ({len(missing_columns)}) -- will be ADDED:")
+        _bullet(missing_columns, lambda c: f"{c[0]}.{c[1].name}")
+    if orphan_tables:
+        click.echo(f"  Orphan tables ({len(orphan_tables)}) -- in DB, not in models:")
+        _bullet(orphan_tables, lambda t: t)
+    if orphan_columns:
+        click.echo(f"  Orphan columns ({len(orphan_columns)}) -- in DB, not in models:")
+        _bullet(orphan_columns, lambda c: f"{c[0]}.{c[1]}")
+    if type_mismatches:
+        click.echo(f"  Type differences ({len(type_mismatches)}) -- REPORTED ONLY "
+                   f"(handle manually; SQLite can't ALTER type in place):")
+        _bullet(type_mismatches, lambda t: f"{t[0]}.{t[1]}: db={t[2]} model={t[3]}")
+
+    nothing_additive = not missing_tables and not missing_columns
+    nothing_at_all = (nothing_additive and not orphan_tables
+                      and not orphan_columns and not type_mismatches)
+    if nothing_at_all:
+        click.echo("  Schema is already in sync with the models. Nothing to do.")
+        click.echo("")
+        return
+
+    click.echo("")
+    if not do_apply:
+        click.echo("DRY RUN -- no changes made. Re-run with --apply to perform the")
+        click.echo("additive changes above (missing tables/columns).")
+        if orphan_tables or orphan_columns:
+            click.echo("To also drop the orphan items, add --drop as well.")
+        click.echo("")
+        return
+
+    # ---------------------------------------------------------------- apply
+    # 1) Create missing tables. create_all() only builds what's absent, so it
+    #    safely creates the missing ones and leaves existing tables alone.
+    if missing_tables:
+        db.create_all()
+        for tname, _ in missing_tables:
+            click.echo(f"  created table: {tname}")
+
+    # 2) Add missing columns, backfilling scalar model defaults.
+    for tname, col in missing_columns:
+        col_type = col.type.compile(dialect=dialect)
+        ddl = f'ALTER TABLE {tname} ADD COLUMN {col.name} {col_type}'
+        db.session.execute(sa_text(ddl))
+        click.echo(f"  added column: {tname}.{col.name} ({col_type})")
+
+        default_value = _scalar_default(col)
+        if default_value is not None:
+            db.session.execute(
+                sa_text(f'UPDATE {tname} SET {col.name} = :v '
+                        f'WHERE {col.name} IS NULL').bindparams(v=default_value),
+            )
+            click.echo(f"      backfilled default: {default_value!r}")
+    db.session.commit()
+
+    # 3) Drops (only with --drop + typed confirmation).
+    if orphan_tables or orphan_columns:
+        if not do_drop:
+            click.echo("")
+            click.echo("Orphan items were NOT dropped (re-run with --drop to remove "
+                       "them).")
+        else:
+            click.echo("")
+            click.echo("About to DROP the following (data will be lost):")
+            for t in orphan_tables:
+                click.echo(f"    table  {t}")
+            for tname, cname in orphan_columns:
+                click.echo(f"    column {tname}.{cname}")
+            typed = click.prompt('Type DROP to confirm', default='', show_default=False)
+            if typed.strip() != 'DROP':
+                click.echo("Confirmation not received; nothing dropped.")
+            else:
+                for tname, cname in orphan_columns:
+                    # Modern SQLite (3.35+) supports DROP COLUMN; fall back
+                    # gracefully if the engine refuses.
+                    try:
+                        db.session.execute(
+                            sa_text(f'ALTER TABLE {tname} DROP COLUMN {cname}')
+                        )
+                        click.echo(f"  dropped column: {tname}.{cname}")
+                    except Exception as exc:
+                        db.session.rollback()
+                        click.echo(f"  could NOT drop {tname}.{cname}: {exc}")
+                for t in orphan_tables:
+                    db.session.execute(sa_text(f'DROP TABLE {t}'))
+                    click.echo(f"  dropped table: {t}")
+                db.session.commit()
+
+    click.echo("")
+    click.echo("Schema update complete.")
+    click.echo("")
+
+
+def _scalar_default(col):
+    """Return a column's scalar default value if it has a simple one, else None.
+
+    Only plain literal defaults are backfilled (e.g. default='...', default=0,
+    default=True). Callable/server-side/SQL defaults are skipped -- they're
+    applied by the app at insert time, not retroactively here.
+    """
+    default = getattr(col, 'default', None)
+    if default is None:
+        return None
+    arg = getattr(default, 'arg', None)
+    if arg is None:
+        return None
+    if callable(arg):
+        return None  # don't evaluate callable defaults during migration
+    return arg
+
+
 @cli.command('rebuild-archive-tables')
 @click.option('--yes', is_flag=True, default=False,
               help='Skip the confirmation prompt.')

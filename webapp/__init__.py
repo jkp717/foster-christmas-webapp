@@ -171,6 +171,9 @@ def create_app(debug=True, config_override=None):
         # Ensure newly added tables exist even on a pre-existing database.
         # create_all() only creates missing tables; it never alters or drops
         # existing ones, so running it every startup is safe and idempotent.
+        # Column/type changes to EXISTING tables are handled out-of-band by the
+        # `python cli.py db-update-schema` command (Alembic), run on deploy --
+        # not on every startup.
         db.create_all()
 
         # Ensure the single SiteSetting row exists with safe, neutral defaults
@@ -178,7 +181,8 @@ def create_app(debug=True, config_override=None):
         # deadline and pickup window in the "Site Settings" screen. We never
         # seed dates from code, so a new season never starts with stale values.
         if db.session.query(SiteSetting).first() is None:
-            db.session.add(SiteSetting(child_signup_open=True))
+            db.session.add(SiteSetting(child_signup_open=True,
+                                       amazon_wishlist=AMAZON_WISHLIST))
             db.session.commit()
 
     app = setup_flask_admin(app, db.session)
@@ -230,16 +234,23 @@ def create_app(debug=True, config_override=None):
     @app.context_processor
     def inject_site_settings():
         # Make the admin-managed gift pickup and signup deadline available to
-        # every template, formatted like the old config strings.
+        # every template, formatted like the old config strings. Also expose the
+        # admin-editable Amazon wish list link (falling back to the config
+        # constant if it hasn't been set in the database yet).
         try:
             setting = SiteSetting.get()
             return {
                 'gift_pickup_datetime': setting.gift_pickup_display,
                 'child_signup_deadline': setting.child_signup_deadline_display,
+                'amazon_wishlist': setting.amazon_wishlist or AMAZON_WISHLIST,
             }
         except Exception:
             # If the settings row/table isn't available yet, fail soft.
-            return {'gift_pickup_datetime': '', 'child_signup_deadline': ''}
+            return {
+                'gift_pickup_datetime': '',
+                'child_signup_deadline': '',
+                'amazon_wishlist': AMAZON_WISHLIST,
+            }
 
     @app.shell_context_processor
     def shell_context():

@@ -194,6 +194,7 @@ All commands run as `python cli.py <command>`:
 | `archive-season` | Archive the current season and wipe the live tables for a new season. See below. |
 | `rebuild-archive-tables` | Drop and recreate the archive tables to match the current schema. **Only safe when the archive tables are empty** — it refuses if they contain data. |
 | `db-create-all` | Create any missing tables (idempotent). |
+| `db-update-schema` | Sync the database to the models: create missing tables, add missing columns (backfilling model defaults), and report orphan/renamed/type-changed columns. Dry-run by default; pass `--apply` to make additive changes, and `--drop` (with a typed confirmation) to remove orphans. Run on deploy after a model change. Back up the database first. |
 
 Run any command with `--help` for its options.
 
@@ -257,14 +258,18 @@ checkout (so a redeploy can never delete it). The high-level steps:
 3. Ensure `.env` is present with a real `SECRET_KEY`, the admin password hash,
    and a `DATABASE_PATH` pointing outside the checkout.
 4. Restart the WSGI service (e.g. gunicorn behind nginx).
-5. After a schema change to the archive tables, run the appropriate migration
-   step before using the affected admin views.
+5. If the deploy changed any models, back up the database, then run
+   `python cli.py db-update-schema` to preview the diff and
+   `python cli.py db-update-schema --apply` to apply additive changes.
 
 [`SECURITY_UPDATE.md`](SECURITY_UPDATE.md) covers the security-related
 deployment steps (admin login setup, removing any old nginx basic-auth on
 `/admin`, cookie settings) in more detail.
 
-> Update database structure changes carefully: the app creates **missing**
-> tables automatically but never alters existing ones, so column changes to
-> tables that already hold data require a deliberate migration rather than a
-> drop-and-recreate.
+> Update database structure changes carefully. On startup the app creates
+> **missing tables** automatically but never alters existing ones. To add
+> **columns** to tables that already hold data (or to review schema drift), use
+> `python cli.py db-update-schema` — it diffs the database against the models,
+> adds missing tables/columns (backfilling model defaults), and reports
+> anything it won't auto-apply (renames, type changes, orphans). It's a dry run
+> until you pass `--apply`. Always back up the database first.
