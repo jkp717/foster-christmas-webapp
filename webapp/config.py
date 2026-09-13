@@ -92,6 +92,10 @@ CONTACT_NAME = "Lillie Price"
 CONTACT_EMAIL = "holidayhopetreepulaski@gmail.com"
 CONTACT_PHONE = "618-889-6319"
 
+# IRS Employer Identification Number, per our 501(c)(3) determination letter.
+# Shown on donation pages / the privacy policy for tax-receipt purposes.
+EIN = "39-2297535"
+
 # Child key starting value in DB
 CHILD_ID_START_VALUE = 1
 CHILD_ID_END_VALUE = 399
