@@ -76,7 +76,7 @@ AUTHNET_ORDER_DESCRIPTION = "Holiday Hope Tree Donation"
 #   PAYPAL_HOSTED_BUTTON_ID empty in that case.
 PAYPAL_PAYMENT_URL = "https://www.paypal.com/donate"
 PAYPAL_HOSTED_BUTTON_ID = ""          # e.g. "ABC123XYZ456" (preferred)
-PAYPAL_BUSINESS = "holidayhopetreepulaski@gmail.com"  # fallback if no button id
+PAYPAL_BUSINESS = os.environ.get("PAYPAL_BUSINESS", "")  # fallback if no button id
 PAYPAL_CURRENCY = "USD"
 
 # Suggested donation amounts (in whole dollars) shown as quick-pick buttons.
@@ -87,14 +87,15 @@ DONATE_NAV_HTML = Markup("""
       <a class="nav-item nav-link" href="/donate">Donate</a>
     """)
 
-# Main contact info
-CONTACT_NAME = "Lillie Price"
-CONTACT_EMAIL = "holidayhopetreepulaski@gmail.com"
-CONTACT_PHONE = "618-889-6319"
+# Main contact info. Real values live in .env (see .env.example) so this
+# personal/organizational info never sits in version control.
+CONTACT_NAME = os.environ.get("CONTACT_NAME", "")
+CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL", "")
+CONTACT_PHONE = os.environ.get("CONTACT_PHONE", "")
 
 # IRS Employer Identification Number, per our 501(c)(3) determination letter.
 # Shown on donation pages / the privacy policy for tax-receipt purposes.
-EIN = "39-2297535"
+EIN = os.environ.get("EIN", "")
 
 # Child key starting value in DB
 CHILD_ID_START_VALUE = 1
