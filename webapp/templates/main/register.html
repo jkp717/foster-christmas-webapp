@@ -99,11 +99,11 @@
                 If you live in Pulaski or Lonoke county and have a child from another county please contact your case-worker from that county about how they are handling Christmas, every county is a little different.
               </li>
               <li class="list-item">
-                Gift pick up will be at {{ config['GIFT_PICKUP_LOCATION'] }} on {{ gift_pickup_datetime }}. We would love to meet you and thank you in person but if this time absolutely does not work,
+                Gift pick up will be at {{ config['GIFT_PICKUP_LOCATION'] or 'TBD' }} on {{ gift_pickup_datetime or 'TBD' }}. We would love to meet you and thank you in person but if this time absolutely does not work,
                 please make sure to click the box “Will need DHS to deliver” when registering your child so that we can get that arranged for you.
               </li>
                 <li class="list-item">
-                  Deadline for the child’s wish lists is {{ child_signup_deadline }}.
+                  Deadline for the child’s wish lists is {{ child_signup_deadline or 'TBD' }}.
                   After that date the foster child will be given age appropriate gifts or you may have the opportunity to shop donated gifts.
                   Please reach out to {{ config['CONTACT_NAME'] }} at <a href="mailto: {{ config['CONTACT_EMAIL'] }}"> {{ config['CONTACT_EMAIL'] }}</a> for more info.
                 </li>
