@@ -271,6 +271,7 @@ db_defaults = {
             'South',
             'Southeast',
             'Jacksonville',
+            'Lonoke',
             'Not Sure'
         ]
     }

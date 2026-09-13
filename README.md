@@ -1,7 +1,7 @@
 # Holiday Hope Tree
 
 A web application for the Holiday Hope Tree program, which connects sponsors
-with foster children in Pulaski County so every child receives Christmas gifts.
+with foster children in Pulaski and Lonoke Counties so every child receives Christmas gifts.
 The public site lets foster parents register children and lets community members
 sign up to sponsor them; a secured admin area lets staff manage families,
 sponsors, gifts, and gift fulfillment, and archive each season's data when it
