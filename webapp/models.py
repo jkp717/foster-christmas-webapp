@@ -10,7 +10,7 @@ from sqlalchemy_utils import PhoneNumberType
 from sqlalchemy.orm import validates
 from sqlalchemy.ext.hybrid import hybrid_property
 
-from webapp.config import CHILD_ID_START_VALUE, CHILD_ID_END_VALUE
+from webapp.config import CHILD_ID_START_VALUE
 
 
 db = SQLAlchemy()
@@ -84,11 +84,81 @@ class DhsOffice(db.Model):
     __tablename__ = "dhs_office"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     office = db.Column(db.String, nullable=False, unique=True)
+    # Child ID number ranges new registrations for this office draw from. An
+    # office can own several ranges so it can grow mid-season without
+    # renumbering anyone (e.g. 1-100 plus 501-550).
+    id_ranges = db.relationship(
+        'DhsOfficeIdRange', back_populates='office', cascade='all, delete-orphan',
+        order_by='DhsOfficeIdRange.range_start',
+    )
     create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
 
     def __repr__(self):
         return f'{self.office}'
+
+    @property
+    def range_pairs(self):
+        return [(r.range_start, r.range_end) for r in self.id_ranges]
+
+    @property
+    def capacity(self):
+        """Total number of child IDs across this office's ranges."""
+        return sum(end - start + 1 for start, end in self.range_pairs)
+
+    @property
+    def ids_in_use(self):
+        """How many live children hold an ID inside this office's ranges."""
+        pairs = self.range_pairs
+        if not pairs:
+            return 0
+        used = _used_child_numbers(cid for (cid,) in db.session.query(Child.child_id).all())
+        return sum(1 for n in used if _in_ranges(n, pairs))
+
+
+class DhsOfficeIdRange(db.Model):
+    __tablename__ = "dhs_office_id_range"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    office_id = db.Column(db.Integer, db.ForeignKey("dhs_office.id"), nullable=False)
+    office = db.relationship('DhsOffice', back_populates='id_ranges')
+    range_start = db.Column(db.Integer, nullable=False)
+    range_end = db.Column(db.Integer, nullable=False)
+
+    def __repr__(self):
+        return f'{self.range_start}-{self.range_end}'
+
+
+def _used_child_numbers(child_ids):
+    """Numeric part of each child_id; split IDs like '12A'/'12B' count as 12."""
+    used = set()
+    for cid in child_ids:
+        digits = re.sub('[^0-9]', '', str(cid or ''))
+        if digits:
+            used.add(int(digits))
+    return used
+
+
+def _in_ranges(n, ranges):
+    return any(start <= n <= end for start, end in ranges)
+
+
+def next_child_id(used, office_ranges, all_ranges):
+    """
+    Pick the child ID number for a new registration.
+
+    Takes the lowest free number in the office's ranges (in order). If the
+    office has no ranges or they are all full, falls back to the overflow pool:
+    the first free number above the highest range any office owns (or
+    CHILD_ID_START_VALUE when no office has a range).
+    """
+    for start, end in sorted(office_ranges):
+        for n in range(start, end + 1):
+            if n not in used:
+                return n
+    n = max((end for _, end in all_ranges), default=CHILD_ID_START_VALUE - 1) + 1
+    while n in used:
+        n += 1
+    return n
 
 
 class Church(db.Model):
@@ -188,26 +258,20 @@ class Child(db.Model):
         return f'{self.first_name.title()} (ID: {self.child_id})'
 
 
-    # create the starting key on table creation
+    # Assign the child ID from the selected office's ranges (see next_child_id).
 @event.listens_for(Child, 'before_insert')
 def child_id_before_insert(mapper, connection, target):
     if target.child_id is None:
-        potential_values = list(range(CHILD_ID_START_VALUE, CHILD_ID_END_VALUE + 1))
-        existing_values = connection.execute(
+        used = _used_child_numbers(connection.execute(
             text("SELECT child_id FROM child WHERE child_id IS NOT NULL")
-        ).scalars().all()
-
-        # Remove non-numeric characters from the child ids
-        stripped_existing_val = []
-
-        for ex in existing_values:
-            stripped_existing_val.append(int(re.sub('[^0-9]', '', ex)))
-
-        existing_set = set(stripped_existing_val)
-        for value in potential_values:
-            if value not in existing_set:
-                target.child_id = value
-                return
+        ).scalars().all())
+        rows = connection.execute(
+            text("SELECT office_id, range_start, range_end FROM dhs_office_id_range")
+        ).all()
+        all_ranges = [(start, end) for _, start, end in rows]
+        office_ranges = [(start, end) for office_id, start, end in rows
+                         if office_id == target.dhs_office_id]
+        target.child_id = next_child_id(used, office_ranges, all_ranges)
 
 
 @event.listens_for(Child, 'after_insert')

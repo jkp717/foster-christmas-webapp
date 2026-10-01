@@ -99,7 +99,6 @@ EIN = os.environ.get("EIN", "")
 
 # Child key starting value in DB
 CHILD_ID_START_VALUE = 1
-CHILD_ID_END_VALUE = 399
 
 # Dates & Locations
 GIFT_PICKUP_LOCATIONS = [

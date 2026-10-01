@@ -181,6 +181,22 @@ Archive views are **read-only for everyone**, including full admins. The
 read-only login can view all of the above but may only edit comment/note
 fields.
 
+### Child ID ranges
+
+Each DHS office can own one or more child ID ranges (**Form Options → DHS
+Office**). A new child gets the lowest free ID in their office's ranges, so the
+number shows the office at a glance (e.g. Lonoke 1-100, Jacksonville 101-200).
+
+- **Growing an office:** add another range to it (e.g. Lonoke 501-550). Don't
+  widen a range into a neighbor's block. Ranges can't overlap; the form rejects it.
+- **Overflow:** a child whose office has no ranges, or whose ranges are full,
+  still registers and gets the next free ID above the highest range. The
+  Children list marks these IDs "outside range" so you can fix the office or
+  add a range.
+- **IDs never change automatically.** Editing ranges or a child's office only
+  affects new registrations. You can still edit a child's ID by hand.
+- The office list shows how many IDs are in use out of the total available.
+
 ---
 
 ## Command-line tools

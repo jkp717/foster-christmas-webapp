@@ -67,6 +67,9 @@
         {{ get_value(row, c) }}
         {% endif %}
         {% endif %}
+        {% if c == 'child_id' and admin_view.child_id_outside_range(row) %}
+            <span class="badge badge-warning" title="This ID is outside the ranges set for {{ row.dhs_office }}. Change the office or add a range on the DHS Office page.">outside range</span>
+        {% endif %}
         </td>
     {% endfor %}
 {% endblock %}

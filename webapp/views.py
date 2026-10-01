@@ -1,3 +1,5 @@
+import re
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 from flask import flash, request, redirect, current_app, url_for
@@ -14,7 +16,9 @@ from flask_wtf import FlaskForm
 from wtforms_alchemy import PhoneNumberField
 from wtforms.widgets import TelInput
 
-from webapp.models import db, Gift, Child, Parent, DhsOffice, Gender, Race, ShoeSize, ClothingSize, FavColor, \
+from wtforms.validators import ValidationError
+
+from webapp.models import db, Gift, Child, Parent, DhsOffice, DhsOfficeIdRange, Gender, Race, ShoeSize, ClothingSize, FavColor, \
     Church, Sponsor, SponsorRequest, ParentArchive, SponsorArchive, ChildArchive, GiftArchive, GiftFulfillment, \
     SponsorRequestArchive, GiftFulfillmentArchive, SiteSetting
 import webapp.util as util
@@ -535,7 +539,19 @@ class ChildView(BaseView):
     @expose('/')
     def index_view(self):
         self._refresh_filters_cache()
+        # Only flag out-of-range IDs once some office has ranges configured.
+        self._any_id_ranges = db.session.query(DhsOfficeIdRange.id).first() is not None
         return super().index_view()
+
+    def child_id_outside_range(self, child):
+        """Template helper: True when a current child's ID isn't in its office's ranges."""
+        if self.model is not Child or not getattr(self, '_any_id_ranges', False):
+            return False
+        digits = re.sub(r'\D', '', str(child.child_id or ''))
+        if not digits:
+            return False
+        pairs = child.dhs_office.range_pairs if child.dhs_office else []
+        return not any(start <= int(digits) <= end for start, end in pairs)
 
     @expose('/split', methods=['GET', 'POST'])
     def split_gifts(self):
@@ -842,6 +858,60 @@ class GiftFulfillmentArchiveView(_ReadOnlyArchiveMixin, GiftFulfillmentView):
 
 class MiscView(BaseView):
     column_display_pk = True
+
+
+class DhsOfficeView(MiscView):
+    """
+    DHS offices plus the child ID ranges each office's registrations draw from.
+    Ranges are edited inline on the office form; to grow an office mid-season,
+    add another range rather than widening one that runs into its neighbor.
+    """
+    form_columns = ['office', 'id_ranges']
+    column_list = ['id', 'office', 'id_ranges', 'ids_in_use']
+    inline_models = [(DhsOfficeIdRange, dict(
+        form_columns=['id', 'range_start', 'range_end'],
+        column_labels={'range_start': 'First ID', 'range_end': 'Last ID'},
+    ))]
+    column_labels = {
+        'id_ranges': 'Child ID Ranges',
+        'ids_in_use': 'IDs In Use',
+    }
+    column_descriptions = {
+        'id_ranges': 'New registrations for this office get the lowest free ID in these ranges. '
+                     'To grow an office, add another range. IDs already given out never change.',
+        'ids_in_use': 'Children holding an ID in these ranges / total IDs available.',
+    }
+    column_formatters = {
+        'id_ranges': lambda v, c, m, n: ', '.join(f'{s}-{e}' for s, e in m.range_pairs) or '—',
+        'ids_in_use': lambda v, c, m, n: f'{m.ids_in_use} / {m.capacity}' if m.id_ranges else '—',
+    }
+
+    def on_model_change(self, form, model, is_created):
+        # Ranges removed on this form are still in the list but marked deleted.
+        ranges = [r for r in model.id_ranges if r not in self.session.deleted]
+        mine = []
+        for r in ranges:
+            if r.range_start is None or r.range_end is None:
+                raise ValidationError('Each ID range needs a first and last ID.')
+            if r.range_start < 1 or r.range_start > r.range_end:
+                raise ValidationError(
+                    f'ID range {r.range_start}-{r.range_end} is invalid: the first ID must be '
+                    f'at least 1 and no larger than the last ID.')
+            mine.append((r.range_start, r.range_end))
+        with self.session.no_autoflush:
+            others = self.session.query(DhsOfficeIdRange, DhsOffice.office).join(DhsOffice)
+            if model.id is not None:
+                others = others.filter(DhsOfficeIdRange.office_id != model.id)
+            taken = [(r.range_start, r.range_end, office) for r, office in others.all()]
+        taken += [(s, e, model.office) for s, e in mine]
+        for i, (s, e) in enumerate(mine):
+            for j, (ts, te, office) in enumerate(taken):
+                if j == len(taken) - len(mine) + i:
+                    continue  # the range itself
+                if s <= te and ts <= e:
+                    raise ValidationError(
+                        f'ID range {s}-{e} overlaps {ts}-{te} ({office}).')
+        super().on_model_change(form, model, is_created)
 
 
 class SiteSettingView(BaseView):

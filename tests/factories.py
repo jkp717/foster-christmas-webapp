@@ -12,7 +12,7 @@ suite can build that record without repeating field boilerplate.
 
 from webapp.models import (
     db, Parent, Child, Sponsor, SponsorRequest, Gift,
-    Gender, Race, DhsOffice,
+    Gender, Race, DhsOffice, DhsOfficeIdRange,
 )
 
 # A valid US phone number string for the sqlalchemy_utils PhoneNumberType.
@@ -124,3 +124,13 @@ def make_gift(child, **kw):
     db.session.add(obj)
     db.session.commit()
     return obj
+
+
+def make_office(name, *ranges):
+    """Create a DhsOffice with the given (start, end) child ID ranges."""
+    office = DhsOffice(office=name)
+    for start, end in ranges:
+        office.id_ranges.append(DhsOfficeIdRange(range_start=start, range_end=end))
+    db.session.add(office)
+    db.session.commit()
+    return office
