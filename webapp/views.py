@@ -383,13 +383,25 @@ class AdminReportsView(_SecureViewMixin, AdminIndexView):
             return redirect(self.get_url('admin.child', flt1_sponsored_equals=1))
 
 
+class AdminForm(FlaskForm):
+    """
+    FlaskForm that also remembers the record being edited as `_obj`, like
+    Flask-Admin's own BaseForm does. Flask-Admin's Unique validator relies on
+    it to skip the record itself; without it, saving any edit to a model with a
+    unique column (DHS office, church, ...) fails with "Already exists."
+    """
+    def __init__(self, *args, **kwargs):
+        self._obj = kwargs.get('obj')
+        super().__init__(*args, **kwargs)
+
+
 class BaseView(_SecureViewMixin, ModelView):
     page_size = 50
     # Use Flask-WTF's FlaskForm as the form base so every admin and public form
     # carries the SAME CSRF token that the app-wide CSRFProtect validates.
     # (Using Flask-Admin's SecureForm here instead causes a token mismatch with
     # CSRFProtect, which silently rejects every POST and reloads the form.)
-    form_base_class = FlaskForm
+    form_base_class = AdminForm
     column_type_formatters = util.DEFAULT_FORMATTERS
     form_excluded_columns = ['create_date', 'modify_date']
     column_exclude_list = form_excluded_columns

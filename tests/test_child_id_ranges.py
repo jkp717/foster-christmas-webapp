@@ -108,6 +108,46 @@ class TestOfficeAdmin:
         resp = self._create(client, "Lonoke Test", (start, end))
         assert "is invalid" in resp.get_data(as_text=True)
 
+    def test_edit_existing_office_to_add_range(self, app, client, login_admin):
+        # Regression: editing any office failed with "Already exists." because
+        # the unique-name check didn't recognize the office being edited.
+        with app.app_context():
+            office = f.make_office("Lonoke Test")
+            oid = office.id
+        login_admin()
+        resp = client.post(
+            f"/admin/dhsoffice/edit/?id={oid}",
+            data={"office": "Lonoke Test",
+                  "id_ranges-0-range_start": "1", "id_ranges-0-range_end": "100"},
+            follow_redirects=True,
+        )
+        assert "Already exists" not in resp.get_data(as_text=True)
+        with app.app_context():
+            assert db.session.get(DhsOffice, oid).range_pairs == [(1, 100)]
+
+    def test_renaming_office_to_existing_name_is_rejected(self, app, client, login_admin):
+        with app.app_context():
+            f.make_office("Lonoke Test")
+            oid = f.make_office("Jacksonville Test").id
+        login_admin()
+        resp = client.post(f"/admin/dhsoffice/edit/?id={oid}",
+                           data={"office": "Lonoke Test"}, follow_redirects=True)
+        assert "Already exists" in resp.get_data(as_text=True)
+        with app.app_context():
+            assert db.session.get(DhsOffice, oid).office == "Jacksonville Test"
+
+    def test_edit_other_unique_option_saves(self, app, client, login_admin):
+        from webapp.models import Church
+        with app.app_context():
+            church = Church(church="Test Church")
+            db.session.add(church)
+            db.session.commit()
+            cid = church.id
+        login_admin()
+        resp = client.post(f"/admin/church/edit/?id={cid}",
+                           data={"church": "Test Church"}, follow_redirects=True)
+        assert "Already exists" not in resp.get_data(as_text=True)
+
     def test_child_list_flags_out_of_range_id(self, app, client, login_admin):
         with app.app_context():
             lonoke = f.make_office("Lonoke Test", (1, 1))
