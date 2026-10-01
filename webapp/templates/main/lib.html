@@ -198,9 +198,14 @@
 {% endmacro %}
 
 {% macro render_pickup_locations(cfg) %}
-{%- for loc in cfg['GIFT_PICKUP_LOCATIONS'] -%}
-  {{ loc['COUNTY'] }} at {{ loc['LOCATION'] }} on {{ loc['DATETIME'] }}{{ '; ' if not loop.last else '' }}
-{%- endfor -%}
+    <ul class="list-style-circle">
+      {% for loc in cfg['GIFT_PICKUP_LOCATIONS'] %}
+      <li class="list-item">
+        <div><strong>{{ loc['COUNTY'] }}:</strong> {{ loc['LOCATION'] }}</div>
+        <div>{{ loc['DATETIME'] }}</div>
+      </li>
+      {% endfor %}
+    </ul>
 {% endmacro %}
 
 {% macro render_dropoff_locations(cfg) %}

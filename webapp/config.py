@@ -105,12 +105,12 @@ CHILD_ID_END_VALUE = 399
 GIFT_PICKUP_LOCATIONS = [
     {
         "COUNTY": "Pulaski County",
-        "LOCATION": "That Church Sherwood, 901 E. Kiehl, Sherwood, AR 72120",
+        "LOCATION": "That Church Sherwood, 901 E. Kiehl Ave, Sherwood, AR 72120",
         "DATETIME": "Friday, December 11th, from 9am-6pm",
     },
     {
         "COUNTY": "Lonoke County",
-        "LOCATION": "That Church Cabot, Cabot, AR",
+        "LOCATION": "That Church Cabot, 868 Bill Foster Memorial Hwy, Cabot, AR 72023",
         "DATETIME": "Monday, December 14th, from 12pm-7pm",
     },
 ]
@@ -125,14 +125,14 @@ GIFT_DROPOFF_LOCATIONS = [
         "ADDITIONAL_INSTRUCTIONS": ""
     },
     {
-        "LOCATION": "That Church Sherwood, 901 E. Kiehl, Sherwood, AR 72120",
-        "DATETIME": "Sunday, December 6th, from 1pm-6pm",
-        "ADDITIONAL_INSTRUCTIONS": Markup(f"""Please contact {CONTACT_NAME} at <a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a> with any questions regarding drop-offs at this location.""")
-    },
-    {
-        "LOCATION": "That Church Cabot, Cabot, AR",
+        "LOCATION": "That Church Cabot, 868 Bill Foster Memorial Hwy, Cabot, AR 72023",
         "DATETIME": "Saturday, December 5th, from 9am-2pm",
         "ADDITIONAL_INSTRUCTIONS": ""
+    },
+    {
+        "LOCATION": "That Church Sherwood, 901 E. Kiehl Ave, Sherwood, AR 72120",
+        "DATETIME": "Sunday, December 6th, from 1pm-6pm",
+        "ADDITIONAL_INSTRUCTIONS": Markup(f"""Please contact {CONTACT_NAME} at <a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a> with any questions regarding drop-offs at this location.""")
     }
 ]
 
@@ -167,7 +167,7 @@ SPONSOR_CHILD_DISCLAIMER = """
 """
 
 SPONSOR_REQUEST_DISCLAIMER = """
-    Please be looking out for an email with more info!  Wishlist(s) will be sent no later than November 19th.
+    Please be looking out for an email with more info!  Wishlist(s) will be sent no later than November 16th.
 """
 
 # database defaults

@@ -773,13 +773,13 @@ class SiteSetting(db.Model):
     @property
     def child_signup_deadline_display(self):
         """
-        Format the deadline like the previous config string (e.g. "Nov 2nd").
+        Format the deadline with the full month name (e.g. "November 2nd").
         Returns an empty string when no deadline is set.
         """
         if self.child_signup_deadline is None:
             return ""
         d = self.child_signup_deadline
-        return f"{d.strftime('%b')} {self._ordinal(d.day)}"
+        return f"{d.strftime('%B')} {self._ordinal(d.day)}"
 
     @staticmethod
     def _format_time(t, with_meridiem=True):

@@ -108,5 +108,5 @@ class TestSiteSetting:
             s = SiteSetting.get()
             s.child_signup_deadline = datetime.date(2025, 11, 2)
             db.session.commit()
-            # e.g. "Nov 2nd"
+            # e.g. "November 2nd"
             assert "2nd" in s.child_signup_deadline_display
