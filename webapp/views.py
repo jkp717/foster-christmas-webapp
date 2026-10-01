@@ -847,7 +847,8 @@ class SiteSettingView(BaseView):
 
     # Only the edit form matters for field config; the list is custom-rendered.
     form_columns = ['child_signup_open', 'child_signup_deadline',
-                    'gift_pickup_date', 'gift_pickup_start', 'gift_pickup_end']
+                    'gift_pickup_date', 'gift_pickup_start', 'gift_pickup_end',
+                    'amazon_wishlist']
     # Render the two pickup times as 12-hour AM/PM dropdowns (whole hours).
     form_overrides = {
         'gift_pickup_start': TwelveHourTimeField,
@@ -871,6 +872,7 @@ class SiteSettingView(BaseView):
         'gift_pickup_date': 'Gift Pickup Date',
         'gift_pickup_start': 'Gift Pickup Start Time',
         'gift_pickup_end': 'Gift Pickup End Time',
+        'amazon_wishlist': 'Amazon Wish List Link',
     }
     column_descriptions = {
         'child_signup_open': 'Master switch. Uncheck to immediately close child signup.',
@@ -878,6 +880,7 @@ class SiteSettingView(BaseView):
         'gift_pickup_date': 'Date gifts are picked up. Shown on the site like "Friday, December 12th".',
         'gift_pickup_start': 'Start of the pickup window (e.g. 9:00 AM).',
         'gift_pickup_end': 'End of the pickup window (e.g. 5:00 PM). Together these display like "9am-5pm".',
+        'amazon_wishlist': 'Link to the Amazon wish list shown on the Get Involved page. Leave blank to use the default.',
     }
 
     @expose('/')
@@ -916,6 +919,11 @@ class SiteSettingView(BaseView):
                 'label': 'Gift Pickup End Time',
                 'value': fmt_time(setting.gift_pickup_end),
                 'note': 'End of the pickup window.',
+            },
+            {
+                'label': 'Amazon Wish List Link',
+                'value': setting.amazon_wishlist or '—',
+                'note': 'Shown on the Get Involved page. Blank = default link.',
             },
         ]
 

@@ -180,7 +180,9 @@ def create_app(debug=True, config_override=None):
         # (signups open, no deadline, no pickup window). The admin sets the real
         # deadline and pickup window in the "Site Settings" screen. We never
         # seed dates from code, so a new season never starts with stale values.
-        if db.session.query(SiteSetting).first() is None:
+        # Only select the id so startup (and `cli.py db-update-schema`) still
+        # works on a database that is missing newer site_setting columns.
+        if db.session.query(SiteSetting.id).first() is None:
             db.session.add(SiteSetting(child_signup_open=True,
                                        amazon_wishlist=AMAZON_WISHLIST))
             db.session.commit()

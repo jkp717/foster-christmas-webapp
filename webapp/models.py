@@ -733,6 +733,9 @@ class SiteSetting(db.Model):
     gift_pickup_date = db.Column(db.Date, default=None)
     gift_pickup_start = db.Column(db.Time, default=None)
     gift_pickup_end = db.Column(db.Time, default=None)
+    # Amazon wish list link shown on the Get Involved page. Null falls back to
+    # the AMAZON_WISHLIST config constant.
+    amazon_wishlist = db.Column(db.String(500), default=None)
     create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
 
