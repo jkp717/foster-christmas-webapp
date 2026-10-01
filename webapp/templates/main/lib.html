@@ -197,6 +197,12 @@
   {% endif %}
 {% endmacro %}
 
+{% macro render_pickup_locations(cfg) %}
+{%- for loc in cfg['GIFT_PICKUP_LOCATIONS'] -%}
+  {{ loc['COUNTY'] }} at {{ loc['LOCATION'] }} on {{ loc['DATETIME'] }}{{ '; ' if not loop.last else '' }}
+{%- endfor -%}
+{% endmacro %}
+
 {% macro render_dropoff_locations(cfg) %}
     <div class="details-sub-list">
       <h5>You have the choice of {{ cfg['GIFT_DROPOFF_LOCATIONS']|length }} drop off locations:</h5>

@@ -102,23 +102,37 @@ CHILD_ID_START_VALUE = 1
 CHILD_ID_END_VALUE = 399
 
 # Dates & Locations
-GIFT_PICKUP_LOCATION = "That Church Sherwood (901 E Kiehl Ave, Sherwood)"
+GIFT_PICKUP_LOCATIONS = [
+    {
+        "COUNTY": "Pulaski County",
+        "LOCATION": "That Church Sherwood, 901 E. Kiehl, Sherwood, AR 72120",
+        "DATETIME": "Friday, December 11th, from 9am-6pm",
+    },
+    {
+        "COUNTY": "Lonoke County",
+        "LOCATION": "That Church Cabot, Cabot, AR",
+        "DATETIME": "Monday, December 14th, from 12pm-7pm",
+    },
+]
 
-# NOTE: The gift pickup window and child signup deadline are no longer kept
-# here. They are managed by the admin in the "Site Settings" screen and stored
-# in the SiteSetting database table. A brand-new database starts with signups
-# open, no deadline, and no pickup window set; the admin fills those in.
+# NOTE: The child signup deadline is not kept here. It is managed by the admin
+# in the "Site Settings" screen and stored in the SiteSetting database table.
 
 GIFT_DROPOFF_LOCATIONS = [
     {
         "LOCATION": "The CALL Support Center, 4020 Woodland Heights, Little Rock, AR 72212",
-        "DATETIME": "Tuesday-Thursday, December 2nd-4th, from 8:30am-3:30 or please call to reserve a time to drop off gifts",
+        "DATETIME": "Tuesday-Thursday, December 1st-3rd, from 8am-2pm",
         "ADDITIONAL_INSTRUCTIONS": ""
     },
     {
         "LOCATION": "That Church Sherwood, 901 E. Kiehl, Sherwood, AR 72120",
-        "DATETIME": "Sunday, Dec 7th, from 2-5pm or Monday, Dec 8th, from 8-11am",
+        "DATETIME": "Sunday, December 6th, from 1pm-6pm",
         "ADDITIONAL_INSTRUCTIONS": Markup(f"""Please contact {CONTACT_NAME} at <a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a> with any questions regarding drop-offs at this location.""")
+    },
+    {
+        "LOCATION": "That Church Cabot, Cabot, AR",
+        "DATETIME": "Saturday, December 5th, from 9am-2pm",
+        "ADDITIONAL_INSTRUCTIONS": ""
     }
 ]
 
@@ -130,8 +144,9 @@ CHILD_REGISTRY_HELPER_TEXT = [
 ]
 
 GIFT_DELIVERY_DISCLAIMER = """
-    Pickup will be Friday, December 12th from 9am-5pm at That Church in Sherwood. If you are 
-    unable to make this work, DHS will be able to deliver to your location.
+    Pulaski County pickup will be Friday, December 11th from 9am-6pm at That Church in Sherwood.
+    Lonoke County pickup will be Monday, December 14th from 12pm-7pm at That Church in Cabot.
+    If you are unable to make this work, DHS will be able to deliver to your location.
 """
 
 REGISTER_CHILD_DISCLAIMER = """
