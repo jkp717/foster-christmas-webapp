@@ -263,7 +263,9 @@ def get_child_filters(model_cls, sponsor_cls, parent_cls, include_year=False):
         FilterEqual(ShoeSize.size, 'Shoe Size', options=get_shoe_size_options),
         FilterEqual(ClothingSize.size, 'Clothing Size', options=get_clothing_size_options),
         FilterEqual(FavColor.color, 'Favorite Color', options=get_fav_color_options),
-        FilterEqual(Church.church, 'Assigned Church', options=get_church_options)
+        FilterEqual(Church.church, 'Assigned Church', options=get_church_options),
+        BooleanEqualFilter(model_cls.in_facility, 'In Facility'),
+        BooleanEqualFilter(model_cls.gifts_need_mailing, 'Mail Gifts'),
     ]
     if include_year:
         filters.append(FilterYear(model_cls.create_date, 'Year'))

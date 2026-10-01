@@ -90,6 +90,52 @@ class TestSponsorSubmission:
                 assert found is not None
 
 
+class TestChildSubmission:
+    def _post_child(self, app, client, **flags):
+        from tests import factories as fac
+        from webapp.models import Gender, Race, DhsOffice
+        with app.app_context():
+            pid = fac.make_parent().id
+            data = {
+                "first_name": "Casey",
+                "last_name": "Kid",
+                "dhs_case_worker": "Case Worker",
+                "dhs_office": str(db.session.query(DhsOffice).first().id),
+                "age": "7",
+                "race": str(db.session.query(Race).first().id),
+                "gender": str(db.session.query(Gender).first().id),
+                "gifts-0-gift": "Bike",
+                **flags,
+            }
+        resp = client.post(f"/register/{pid}/child", data=data, follow_redirects=False)
+        assert resp.status_code in (301, 302)
+        return pid
+
+    def test_form_shows_facility_and_mailing_checkboxes(self, app, client):
+        from tests import factories as fac
+        with app.app_context():
+            pid = fac.make_parent().id
+        html = client.get(f"/register/{pid}/child").get_data(as_text=True)
+        assert "This child is in a facility" in html
+        assert "These gifts will need to be mailed" in html
+
+    def test_checked_boxes_are_saved(self, app, client):
+        from webapp.models import Child
+        pid = self._post_child(app, client, in_facility="y", gifts_need_mailing="y")
+        with app.app_context():
+            child = db.session.query(Child).filter(Child.parent_id == pid).one()
+            assert child.in_facility is True
+            assert child.gifts_need_mailing is True
+
+    def test_unchecked_boxes_default_to_false(self, app, client):
+        from webapp.models import Child
+        pid = self._post_child(app, client)
+        with app.app_context():
+            child = db.session.query(Child).filter(Child.parent_id == pid).one()
+            assert child.in_facility is False
+            assert child.gifts_need_mailing is False
+
+
 class TestEmailValidator:
     """Unit tests for the DeliverableEmail validator (syntax pass, no network)."""
 

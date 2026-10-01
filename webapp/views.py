@@ -458,11 +458,12 @@ class ChildView(BaseView):
     list_template = 'admin/child-list.html'
     column_list = [
         'child_id', 'parent', 'first_name', 'last_name', 'dhs_office', 'age', 'dhs_case_worker', 'gender',
-        'sponsor_name', 'gifts', 'church', 'note'
+        'sponsor_name', 'gifts', 'church', 'in_facility', 'gifts_need_mailing', 'note'
     ]
     column_export_list = [
         'child_id', 'parent', 'parent.phone', 'parent.email', 'first_name', 'last_name', 'dhs_office', 'age',
-        'dhs_case_worker', 'gender', 'sponsor_name', 'gifts', 'church', 'interests', 'note'
+        'dhs_case_worker', 'gender', 'sponsor_name', 'gifts', 'church', 'interests', 'in_facility',
+        'gifts_need_mailing', 'note'
     ]
     form_exclude_columns = [
         'id', 'is_split', 'child_id', 'church', 'note', 'sponsor_name', 'parent.phone', 'parent.email'
@@ -487,7 +488,8 @@ class ChildView(BaseView):
         rules.NestedRule([rules.Header('Foster Parent'), 'parent', rules.Macro('render_child_list')]),
         rules.NestedRule([
             rules.Header('Add Foster Child'), 'first_name', 'last_name', 'dhs_case_worker',
-            'dhs_office', 'age', 'race', 'gender', 'fav_color', 'shoe_size', 'clothing_size', 'interests'
+            'dhs_office', 'age', 'race', 'gender', 'fav_color', 'shoe_size', 'clothing_size', 'interests',
+            'in_facility', 'gifts_need_mailing'
         ]),
         rules.NestedRule([
             'gifts',
@@ -495,6 +497,12 @@ class ChildView(BaseView):
         ])
     ]
     inline_models = [(Gift, dict(form_columns=['id', 'gift']))]
+    # Full-sentence checkbox labels on the registration form; the shorter
+    # column_labels below are used for the admin list/export headers.
+    form_args = {
+        'in_facility': {'label': 'This child is in a facility'},
+        'gifts_need_mailing': {'label': 'These gifts will need to be mailed'},
+    }
     column_labels = {
         'dhs_case_worker': 'Case Worker',
         'dhs_office': 'DHS Office',
@@ -502,7 +510,9 @@ class ChildView(BaseView):
         'parent': 'Foster Parent',
         'note': 'Notes',
         'has_sponsor': 'Sponsored',
-        'sponsor_name': 'Sponsor'
+        'sponsor_name': 'Sponsor',
+        'in_facility': 'In Facility',
+        'gifts_need_mailing': 'Mail Gifts',
     }
     column_formatters = {
         'gifts': util.gift_list_formatter,
