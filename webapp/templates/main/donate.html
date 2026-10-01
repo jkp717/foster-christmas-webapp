@@ -48,13 +48,13 @@
             </span>
           </label>
 
-          <label class="method-card" data-method="authnet">
+<!--          <label class="method-card" data-method="authnet">
             <input type="radio" name="method" value="authnet" />
             <span class="method-card-inner">
               <span class="method-logo method-logo-card">Credit / Debit Card</span>
               <span class="method-desc">Secure checkout powered by Authorize.Net</span>
             </span>
-          </label>
+          </label>-->
         </div>
       </div>
 
@@ -101,11 +101,11 @@
        Posts the chosen amount to our server, which requests a one-time form
        token and forwards the donor to Authorize.Net's secure hosted form with
        the amount already filled in. #}
-    <form id="authnet-form" method="post"
+<!--    <form id="authnet-form" method="post"
           action="{{ get_url('admin.donate_authnet') }}" class="hidden-pay-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <input type="hidden" name="amount" id="authnet-amount" value="" />
-    </form>
+    </form>-->
 
   </div>
 </div>
@@ -181,12 +181,12 @@
       // Pass the chosen amount to PayPal's hosted donate page.
       document.getElementById('paypal-amount').value = Number(selectedAmount).toFixed(2);
       document.getElementById('paypal-form').submit();
-    } else {
+    } // else {
       // Authorize.Net (Accept Hosted): send the chosen amount to our server,
       // which fixes the amount and forwards the donor to the hosted form.
-      document.getElementById('authnet-amount').value = Number(selectedAmount).toFixed(2);
-      document.getElementById('authnet-form').submit();
-    }
+      // document.getElementById('authnet-amount').value = Number(selectedAmount).toFixed(2);
+      // document.getElementById('authnet-form').submit();
+    // }
   });
 
   refreshSubmit();
