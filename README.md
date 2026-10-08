@@ -34,7 +34,8 @@ Built with Flask, Flask-Admin, and SQLAlchemy on top of SQLite.
 - Foster-parent and child registration, with a configurable signup window
   (open/closed plus an optional deadline).
 - Sponsor registration and sponsor "wishlist" requests.
-- On-site donations via PayPal and Authorize.Net (Accept Hosted).
+- On-site donations via PayPal, Cash App and Zeffy (set the $Cashtag and
+  Zeffy form link in Admin → Site Settings), and Authorize.Net (Accept Hosted).
 - Informational pages (about, privacy, get-involved, gift pickup details).
 
 **Admin area** (`/admin`, sign-in required)

@@ -803,6 +803,12 @@ class SiteSetting(db.Model):
     # Amazon wish list link shown on the Get Involved page. Null falls back to
     # the AMAZON_WISHLIST config constant.
     amazon_wishlist = db.Column(db.String(500), default=None)
+    # Cash App $Cashtag (stored without the "$") offered on the Donate page.
+    # Null hides the Cash App option.
+    cashapp_cashtag = db.Column(db.String(50), default=None)
+    # Zeffy donation form link offered on the Donate page. Null hides the
+    # Zeffy option.
+    zeffy_url = db.Column(db.String(500), default=None)
     create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
 

@@ -48,6 +48,26 @@
             </span>
           </label>
 
+          {% if cashapp_cashtag %}
+          <label class="method-card" data-method="cashapp">
+            <input type="radio" name="method" value="cashapp" />
+            <span class="method-card-inner">
+              <span class="method-logo method-logo-cashapp">Cash App</span>
+              <span class="method-desc">Pay with Cash App (${{ cashapp_cashtag }})</span>
+            </span>
+          </label>
+          {% endif %}
+
+          {% if zeffy_url %}
+          <label class="method-card" data-method="zeffy">
+            <input type="radio" name="method" value="zeffy" />
+            <span class="method-card-inner">
+              <span class="method-logo method-logo-zeffy">Zeffy</span>
+              <span class="method-desc">Card or bank transfer, with an instant tax receipt</span>
+            </span>
+          </label>
+          {% endif %}
+
 <!--          <label class="method-card" data-method="authnet">
             <input type="radio" name="method" value="authnet" />
             <span class="method-card-inner">
@@ -113,6 +133,8 @@
 <script>
 (function () {
   var DEFAULT_AMOUNT = 50;
+  var CASHAPP_TAG = {{ cashapp_cashtag|tojson }};
+  var ZEFFY_URL = {{ zeffy_url|tojson }};
   var selectedAmount = DEFAULT_AMOUNT;
 
   var amountBtns   = Array.prototype.slice.call(document.querySelectorAll('.amount-btn'));
@@ -120,6 +142,7 @@
   var customInput  = document.getElementById('custom-amount');
   var methodCards  = Array.prototype.slice.call(document.querySelectorAll('.method-card'));
   var submitLabel  = document.getElementById('donate-submit-amount');
+  var submitButton = document.getElementById('donate-submit');
   var form         = document.getElementById('donate-form');
 
   function formatAmount(val) {
@@ -127,7 +150,18 @@
     return '$' + (Number(val) % 1 === 0 ? Number(val).toFixed(0) : Number(val).toFixed(2));
   }
 
+  function selectedMethod() {
+    return document.querySelector('input[name=method]:checked').value;
+  }
+
   function refreshSubmit() {
+    // Zeffy's form has its own amount screen, so the amount isn't passed along.
+    if (selectedMethod() === 'zeffy') {
+      submitButton.firstChild.textContent = 'Continue to Zeffy';
+      submitLabel.textContent = '';
+      return;
+    }
+    submitButton.firstChild.textContent = 'Donate ';
     var label = formatAmount(selectedAmount);
     submitLabel.textContent = label || '';
   }
@@ -161,11 +195,18 @@
       methodCards.forEach(function (c) { c.classList.remove('is-selected'); });
       card.classList.add('is-selected');
       card.querySelector('input[type=radio]').checked = true;
+      refreshSubmit();
     });
   });
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
+
+    if (selectedMethod() === 'zeffy') {
+      // Zeffy collects the amount on its own form.
+      window.location.href = ZEFFY_URL;
+      return;
+    }
 
     if (!selectedAmount || selectedAmount <= 0) {
       customRow.hidden = false;
@@ -175,12 +216,16 @@
     }
     customInput.classList.remove('input-error');
 
-    var method = document.querySelector('input[name=method]:checked').value;
+    var method = selectedMethod();
 
     if (method === 'paypal') {
       // Pass the chosen amount to PayPal's hosted donate page.
       document.getElementById('paypal-amount').value = Number(selectedAmount).toFixed(2);
       document.getElementById('paypal-form').submit();
+    } else if (method === 'cashapp') {
+      // Open Cash App's payment page with our $Cashtag and the amount filled in.
+      window.location.href = 'https://cash.app/$' + encodeURIComponent(CASHAPP_TAG) +
+        '/' + Number(selectedAmount).toFixed(2);
     } // else {
       // Authorize.Net (Accept Hosted): send the chosen amount to our server,
       // which fixes the amount and forwards the donor to the hosted form.

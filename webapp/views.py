@@ -1,4 +1,5 @@
 import re
+from urllib.parse import urlparse
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
@@ -940,7 +941,7 @@ class SiteSettingView(BaseView):
     # Only the edit form matters for field config; the list is custom-rendered.
     form_columns = ['child_signup_open', 'child_signup_deadline',
                     'gift_pickup_date', 'gift_pickup_start', 'gift_pickup_end',
-                    'amazon_wishlist']
+                    'amazon_wishlist', 'cashapp_cashtag', 'zeffy_url']
     # Render the two pickup times as 12-hour AM/PM dropdowns (whole hours).
     form_overrides = {
         'gift_pickup_start': TwelveHourTimeField,
@@ -965,6 +966,8 @@ class SiteSettingView(BaseView):
         'gift_pickup_start': 'Gift Pickup Start Time',
         'gift_pickup_end': 'Gift Pickup End Time',
         'amazon_wishlist': 'Amazon Wish List Link',
+        'cashapp_cashtag': 'Cash App $Cashtag',
+        'zeffy_url': 'Zeffy Donation Form Link',
     }
     column_descriptions = {
         'child_signup_open': 'Master switch. Uncheck to immediately close child signup.',
@@ -973,7 +976,25 @@ class SiteSettingView(BaseView):
         'gift_pickup_start': 'Start of the pickup window (e.g. 9:00 AM).',
         'gift_pickup_end': 'End of the pickup window (e.g. 5:00 PM). Together these display like "9am-5pm".',
         'amazon_wishlist': 'Link to the Amazon wish list shown on the Get Involved page. Leave blank to use the default.',
+        'cashapp_cashtag': 'Your $Cashtag for the Donate page (e.g. $HolidayHopeTree). Leave blank to hide the Cash App option.',
+        'zeffy_url': 'Link to your Zeffy donation form (Zeffy: "Share your form with a URL link"). Leave blank to hide the Zeffy option.',
     }
+
+    def on_model_change(self, form, model, is_created):
+        # Store the cashtag without the leading "$"; blank means "hidden".
+        tag = (model.cashapp_cashtag or '').strip().lstrip('$').strip()
+        if tag and not re.fullmatch(r'[A-Za-z0-9_-]+', tag):
+            raise ValidationError('Cash App $Cashtag may only contain letters, numbers, "_" and "-".')
+        model.cashapp_cashtag = tag or None
+        # The Zeffy link must be an https:// zeffy.com address; blank means "hidden".
+        zeffy = (model.zeffy_url or '').strip()
+        if zeffy:
+            host = urlparse(zeffy).hostname or ''
+            if not zeffy.lower().startswith('https://') or not (
+                    host == 'zeffy.com' or host.endswith('.zeffy.com')):
+                raise ValidationError('Zeffy Donation Form Link must be an https://www.zeffy.com/... link.')
+        model.zeffy_url = zeffy or None
+        super().on_model_change(form, model, is_created)
 
     @expose('/')
     def index_view(self):
@@ -1016,6 +1037,16 @@ class SiteSettingView(BaseView):
                 'label': 'Amazon Wish List Link',
                 'value': setting.amazon_wishlist or '—',
                 'note': 'Shown on the Get Involved page. Blank = default link.',
+            },
+            {
+                'label': 'Cash App $Cashtag',
+                'value': '$' + setting.cashapp_cashtag if setting.cashapp_cashtag else '—',
+                'note': 'Shown as a donation option on the Donate page. Blank = hidden.',
+            },
+            {
+                'label': 'Zeffy Donation Form Link',
+                'value': setting.zeffy_url or '—',
+                'note': 'Shown as a donation option on the Donate page. Blank = hidden.',
             },
         ]
 

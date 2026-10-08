@@ -510,6 +510,8 @@ ul.list-style-circle li.list-item::before { content: "✦"; position: absolute; 
 .method-card-inner { display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
 .method-logo { font-weight: 700; font-size: 1.3rem; margin-bottom: 6px; line-height: 1; }
 .method-logo-paypal .pp-pay { color: #003087; } .method-logo-paypal .pp-pal { color: #009cde; }
+.method-logo-cashapp { color: #00D632; }
+.method-logo-zeffy { color: #6a3df0; }
 .method-logo-card { color: var(--evergreen); font-size: 1.1rem; font-family: var(--font-display); font-weight: 600; }
 .method-desc { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.4; }
 .donate-submit { width: 100%; border: none; background: var(--gold-grad); color: var(--evergreen); font-family: var(--font-body); font-size: 1.18rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 17px; border-radius: 999px; cursor: pointer; box-shadow: 0 12px 30px rgba(193,154,62,0.36); transition: transform .25s ease, box-shadow .25s ease; }

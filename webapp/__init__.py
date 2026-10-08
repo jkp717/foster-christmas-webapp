@@ -239,13 +239,16 @@ def create_app(debug=True, config_override=None):
         # Make the admin-managed gift pickup and signup deadline available to
         # every template, formatted like the old config strings. Also expose the
         # admin-editable Amazon wish list link (falling back to the config
-        # constant if it hasn't been set in the database yet).
+        # constant if it hasn't been set in the database yet) and the Cash App
+        # $Cashtag and Zeffy form link for the Donate page (blank hides each option).
         try:
             setting = SiteSetting.get()
             return {
                 'gift_pickup_datetime': setting.gift_pickup_display,
                 'child_signup_deadline': setting.child_signup_deadline_display,
                 'amazon_wishlist': setting.amazon_wishlist or AMAZON_WISHLIST,
+                'cashapp_cashtag': setting.cashapp_cashtag or '',
+                'zeffy_url': setting.zeffy_url or '',
             }
         except Exception:
             # If the settings row/table isn't available yet, fail soft.
@@ -253,6 +256,8 @@ def create_app(debug=True, config_override=None):
                 'gift_pickup_datetime': '',
                 'child_signup_deadline': '',
                 'amazon_wishlist': AMAZON_WISHLIST,
+                'cashapp_cashtag': '',
+                'zeffy_url': '',
             }
 
     @app.shell_context_processor
