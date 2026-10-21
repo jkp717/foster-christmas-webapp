@@ -276,6 +276,13 @@ def child_id_before_insert(mapper, connection, target):
 
 @event.listens_for(Child, 'after_insert')
 def child_id_after_insert(mapper, connection, target):
+    # child.child_id is unique, so any existing row for this ID is a stale
+    # leftover from a child that was renamed/deleted; drop it so the insert
+    # doesn't fail.
+    connection.execute(
+        text("DELETE FROM gift_fulfillment WHERE child_id = :cid"),
+        {"cid": target.child_id},
+    )
     connection.execute(
         text("INSERT INTO gift_fulfillment (child_id) VALUES (:cid)"),
         {"cid": target.child_id},
@@ -290,6 +297,13 @@ def child_id_after_update(mapper, connection, target):
     if 'child_id' in old_values.keys() and 'is_split' not in old_values.keys():
         connection.execute(
             text("UPDATE gift SET child_id = :new_cid WHERE child_id = :old_cid"),
+            {"new_cid": new_values['child_id'], "old_cid": old_values['child_id']},
+        )
+    if 'child_id' in old_values.keys():
+        # Keep the fulfillment row attached to the child (including on split,
+        # where the original child becomes '<id>A').
+        connection.execute(
+            text("UPDATE gift_fulfillment SET child_id = :new_cid WHERE child_id = :old_cid"),
             {"new_cid": new_values['child_id'], "old_cid": old_values['child_id']},
         )
 

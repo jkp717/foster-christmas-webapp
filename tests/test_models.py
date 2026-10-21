@@ -32,6 +32,33 @@ class TestChildLifecycle:
             c2 = f.make_child()
             assert c1.child_id != c2.child_id
 
+    def test_changing_child_id_moves_gift_fulfillment_row(self, app):
+        with app.app_context():
+            child = f.make_child()
+            old_cid = child.child_id
+            child.child_id = '9999'
+            db.session.commit()
+            rows = db.session.execute(
+                sa_text("SELECT child_id FROM gift_fulfillment")
+            ).scalars().all()
+            assert rows == ['9999']
+            # The freed ID can be reused by a new child without a conflict.
+            new_child = f.make_child(child_id=old_cid)
+            assert new_child.gift_fulfillment is not None
+
+    def test_stale_gift_fulfillment_row_does_not_block_insert(self, app):
+        with app.app_context():
+            db.session.execute(
+                sa_text("INSERT INTO gift_fulfillment (child_id) VALUES ('777')")
+            )
+            db.session.commit()
+            child = f.make_child(child_id='777')
+            rows = db.session.execute(
+                sa_text("SELECT child_id FROM gift_fulfillment WHERE child_id = '777'")
+            ).fetchall()
+            assert child.child_id == '777'
+            assert len(rows) == 1
+
 
 class TestValidators:
     def test_child_names_title_cased(self, app):
