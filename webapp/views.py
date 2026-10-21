@@ -427,6 +427,13 @@ class BaseView(_SecureViewMixin, ModelView):
     def can_delete(self):
         return not is_readonly_user()
 
+    def _get_ruleset_missing_fields(self, ruleset, form):
+        # Flask-Admin deletes form fields that aren't listed in form_rules,
+        # which would strip the CSRF token from every rules-based edit/create
+        # page and make the save fail with "The CSRF token is missing."
+        missing = super()._get_ruleset_missing_fields(ruleset, form)
+        return [name for name in missing if name != 'csrf_token']
+
     def is_comment_column(self, name):
         """Template helper: is this list column a comment/note-type field?"""
         return is_comment_field(name)

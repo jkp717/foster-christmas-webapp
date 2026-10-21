@@ -123,6 +123,24 @@ class TestCSRF:
         # CSRF failure is a 400 (and definitely not a successful redirect to admin)
         assert resp.status_code == 400
 
+    def test_rules_based_admin_forms_render_csrf_token(self, app):
+        # Flask-Admin drops fields missing from form_rules; the CSRF token must
+        # survive or saving the child edit form fails with "token is missing".
+        import re
+        from tests import factories as fac
+        app.config["WTF_CSRF_ENABLED"] = True
+        with app.app_context():
+            child_id = fac.make_child().id
+        client = app.test_client()
+        login_page = client.get("/admin/login").text
+        token = re.search(r'name="csrf_token"[^>]*value="([^"]+)"', login_page).group(1)
+        client.post("/admin/login", data={
+            "username": TEST_ADMIN_USERNAME, "password": TEST_ADMIN_PASSWORD, "csrf_token": token,
+        })
+        for url in (f"/admin/child/edit/?id={child_id}", "/admin/child/new/"):
+            page = client.get(url).text
+            assert 'id="csrf_token"' in page, url
+
 
 # --------------------------------------------------------------------------
 # IDOR: the child-registration page must not let one parent's URL operate on
