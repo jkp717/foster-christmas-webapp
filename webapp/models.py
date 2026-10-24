@@ -486,10 +486,6 @@ class Gift(db.Model):
     create_date = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     modify_date = db.Column(db.DateTime, onupdate=datetime.now(timezone.utc))
 
-    @validates('gift')
-    def convert_title(self, key, value):
-        return value.title()
-
     @hybrid_property
     def year(self):
         if self.create_date:
@@ -500,10 +496,10 @@ class Gift(db.Model):
         return extract('year', cls.create_date)
 
     def __repr__(self):
-        return f'{self.gift.title()}'
+        return self.gift
 
     def __str__(self):
-        return f'{self.gift.title()}'
+        return self.gift
 
 
 class GiftArchive(db.Model):
@@ -526,10 +522,6 @@ class GiftArchive(db.Model):
         ),
     )
 
-    @validates('gift')
-    def convert_title(self, key, value):
-        return value.title()
-
     @hybrid_property
     def year(self):
         if self.create_date:
@@ -540,10 +532,10 @@ class GiftArchive(db.Model):
         return extract('year', cls.create_date)
 
     def __repr__(self):
-        return f'{self.gift.title()}'
+        return self.gift
 
     def __str__(self):
-        return f'{self.gift.title()}'
+        return self.gift
 
 
 class Sponsor(db.Model):
