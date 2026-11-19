@@ -400,6 +400,17 @@ span.brand-mark {
 /* ----- meet the team ----- */
 .team-photo { max-width: 960px; margin: 0 auto clamp(2.5rem, 5vw, 4rem); }
 .team-photo img { width: 100%; border-radius: 20px; box-shadow: var(--shadow-lift); }
+.team-photo-caption {
+    text-align: center; margin-top: 1rem; font-size: 0.95rem; color: var(--ink-soft);
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 0.2rem 0.5rem;
+}
+.team-photo-caption-label {
+    font-weight: 600; font-size: 0.74rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold-deep);
+}
+.team-photo-caption a { color: var(--evergreen-soft); font-weight: 500; }
+.team-photo-caption a:hover { color: var(--gold-deep); }
+.team-photo-caption .sep { color: var(--gold); }
+.team-card { scroll-margin-top: 100px; }
 .team-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
     gap: clamp(1.2rem, 2.5vw, 1.8rem);
