@@ -5,7 +5,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link href="{{ url_for('static', filename='css/style.css') }}?v=16" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/style.css') }}?v=17" rel="stylesheet">
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
 {% endblock %}
 
@@ -21,7 +21,13 @@
       </button>
       <nav class="nav-links" id="navLinks">
         <a href="/" class="nav-link">Home</a>
-        <a href="{{ get_url('admin.about_us') }}" class="nav-link">About</a>
+        <div class="nav-dropdown" id="aboutDropdown">
+          <button type="button" class="nav-link nav-dropdown-toggle" aria-haspopup="true" aria-expanded="false">About</button>
+          <div class="nav-dropdown-menu">
+            <a href="{{ get_url('admin.about_us') }}" class="nav-dropdown-item">Our Story</a>
+            <a href="{{ get_url('admin.meet_the_team') }}" class="nav-dropdown-item">Meet the Team</a>
+          </div>
+        </div>
         <a href="{{ get_url('register.get_involved') }}" class="nav-link">Get Involved</a>
         <a href="{{ get_url('register.details') }}" class="nav-link">Details</a>
         <a href="{{ config['FACEBOOK_URL'] }}" class="nav-link nav-icon" aria-label="Facebook">
@@ -62,6 +68,7 @@
         <h5 class="footer-header">Explore</h5>
         <a href="/" class="footer-link">Home</a>
         <a href="{{ get_url('admin.about_us') }}" class="footer-link">About Us</a>
+        <a href="{{ get_url('admin.meet_the_team') }}" class="footer-link">Meet the Team</a>
         <a href="{{ get_url('register.get_involved') }}" class="footer-link">Get Involved</a>
         <a href="/donate" class="footer-link">Donate</a>
       </div>
@@ -99,6 +106,26 @@
           var open = links.classList.toggle('open');
           toggle.classList.toggle('open', open);
           toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+      }
+
+      // About dropdown: opens on hover/focus via CSS; click toggles it for touch devices.
+      var dd = document.getElementById('aboutDropdown');
+      if (dd) {
+        var ddBtn = dd.querySelector('.nav-dropdown-toggle');
+        var setOpen = function (open) {
+          dd.classList.toggle('open', open);
+          ddBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        };
+        ddBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          setOpen(!dd.classList.contains('open'));
+        });
+        document.addEventListener('click', function (e) {
+          if (!dd.contains(e.target)) setOpen(false);
+        });
+        dd.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') { setOpen(false); ddBtn.focus(); }
         });
       }
 

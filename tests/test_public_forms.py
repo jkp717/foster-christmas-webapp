@@ -13,6 +13,20 @@ class TestPublicPagesRender:
     def test_home_page(self, client):
         assert client.get("/").status_code == 200
 
+    def test_about_us_page(self, client):
+        resp = client.get("/about-us")
+        assert resp.status_code == 200
+        # About menu links to both sub-pages
+        assert b'href="/about-us"' in resp.data
+        assert b'href="/meet-the-team"' in resp.data
+
+    def test_meet_the_team_page(self, client):
+        resp = client.get("/meet-the-team")
+        assert resp.status_code == 200
+        assert b"Meet Our Team" in resp.data
+        assert b"Lillie" in resp.data
+        assert b"img/photos/team.jpg" in resp.data
+
     def test_parent_register_page(self, client):
         # Parent registration is the register index ('/register/').
         resp = client.get("/register/")

@@ -1,3 +1,4 @@
+import os
 import re
 from urllib.parse import urlparse
 
@@ -45,6 +46,16 @@ class IndexView(AdminIndexView):
     def about_us(self):
         return self.render(
             'main/about-us.html',
+        )
+
+    @expose('/meet-the-team')
+    def meet_the_team(self):
+        # The team photo is optional: only show it once it has been added to static/.
+        team_photo = 'img/photos/team.jpg'
+        has_team_photo = os.path.isfile(os.path.join(current_app.static_folder, team_photo))
+        return self.render(
+            'main/meet-the-team.html',
+            team_photo=team_photo if has_team_photo else None,
         )
 
     @expose('/privacy-policy')

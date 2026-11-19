@@ -1,0 +1,61 @@
+{% extends 'main/base.html' %}
+
+{% set team = [
+  {
+    'name': 'Lillie Price',
+    'role': 'Founder',
+    'bio': "Born out of her own journey as a foster and adoptive mom, Lillie founded Holiday Hope Tree in 2021 to ensure every child knows they are truly loved. A devoted wife, mom of five, and local business owner, she faithfully serves local families through her church, Project Zero, and The CALL. For Lillie, this mission isn’t just something she does — it’s the heartbeat of her life.",
+  },
+  {
+    'name': 'Claire Rhodes',
+    'bio': "A mom of two, including one child adopted through foster care, and a former foster parent, Claire has a deep passion for supporting children and families in foster care. After meeting Lillie in 2021 and discovering their shared commitment to making Christmas special for children in foster care, they joined forces and began growing a network of like-minded people committed to making a difference. Claire works for USAble Life Insurance and is grateful for the company’s support of this effort through encouraging employee groups to volunteer!",
+  },
+  {
+    'name': 'Sarah Davis',
+    'bio': "I’m Sarah. Fostering and adoption are important to me because I’m adopted and we have adopted and fostered for a season. That’s one of the many reasons why I serve alongside others for Holiday Hope Tree, to ensure that children in care are seen and loved on during the holiday season.",
+  },
+  {
+    'name': 'Sam Kimes',
+    'bio': "I am a devoted mother, grandmother, and woman of faith who believes in loving God, loving people, and making a difference in the lives of others. I have a heart for serving, encouraging, and investing in the next generation through ministry and leadership. My journey has taught me the power of grace, the strength of faith, and the importance of leaving a legacy that impacts others.",
+  },
+  {
+    'name': 'Kelsey Uting',
+    'bio': "Since the beginning of Holiday Hope Tree, Kelsey has shared a heart for making Christmas special for every child, no matter their circumstances. A wife, mom of three, and CPA at PwC, she’s an organized, get-it-done person who loves turning a need into action. Above all, she hopes each child reached through Holiday Hope Tree feels deeply loved and sees the love of Jesus through the people who come together to make their Christmas special.",
+  },
+  {
+    'name': 'Kathy Lower',
+    'bio': "Kathy is devoted to her family and is a devoted woman of faith with a servant’s heart and a passion for serving children and families. After more than 30 years in the corporate world, she followed God’s calling to serve children, working for and volunteering with organizations including Arkansas Children’s, Project Zero, her church’s Foster and Adopt Support group, and Holiday Hope Tree. Inspired by the opportunity to make a difference in the lives of vulnerable children, Kathy also became a CASA advocate in April 2024, grateful for the opportunity to serve and for God’s continued guidance in her journey.",
+  },
+  {
+    'name': 'Jacqueline Peskem',
+    'bio': "Jacqueline is a mother of 4 and has a huge passion for children. She spends her professional and personal time ensuring every foster child in Arkansas knows they are special and loved. Her partnership with Project Zero shows her heart for children and she strives daily to make sure every waiting child in Arkansas finds their forever home.",
+  },
+] %}
+
+{% block page_container %}
+<section class="page-shell">
+  <div class="wrap">
+    <div class="page-head">
+      <span class="eyebrow">About Us</span>
+      <h1 class="page-title">Meet Our Team</h1>
+      <p class="page-intro">The people behind Holiday Hope Tree — volunteers who share a heart for children in foster care.</p>
+    </div>
+
+    {% if team_photo %}
+    <figure class="team-photo">
+      <img src="{{ url_for('static', filename=team_photo) }}" alt="The Holiday Hope Tree team">
+    </figure>
+    {% endif %}
+
+    <div class="team-grid">
+      {% for member in team %}
+      <article class="team-card reveal">
+        <h3 class="team-name">{{ member.name }}</h3>
+        {% if member.role %}<span class="team-role">{{ member.role }}</span>{% endif %}
+        <p class="team-bio">{{ member.bio }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
