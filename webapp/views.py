@@ -566,7 +566,14 @@ class ChildView(BaseView):
 
     def get_query(self):
         query = super().get_query()
-        return query.options(joinedload(self.model.gifts), joinedload(self.model.sponsor))
+        # Eager-load relations used only by the CSV export. The export streams
+        # rows after the request's session closes, so lazy loads there fail and
+        # those columns come out blank.
+        return query.options(
+            joinedload(self.model.gifts), joinedload(self.model.sponsor), joinedload(self.model.parent),
+            joinedload(self.model.race), joinedload(self.model.fav_color),
+            joinedload(self.model.shoe_size), joinedload(self.model.clothing_size),
+        )
 
     @expose('/')
     def index_view(self):
