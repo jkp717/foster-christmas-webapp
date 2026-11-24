@@ -496,9 +496,9 @@ class ChildView(BaseView):
         'sponsor_name', 'gifts', 'church', 'in_facility', 'gifts_need_mailing', 'note'
     ]
     column_export_list = [
-        'child_id', 'parent', 'parent.phone', 'parent.email', 'first_name', 'last_name', 'dhs_office', 'age',
-        'dhs_case_worker', 'gender', 'sponsor_name', 'gifts', 'church', 'interests', 'in_facility',
-        'gifts_need_mailing', 'note'
+        'child_id', 'parent', 'parent.phone', 'parent.email', 'parent.gift_delivery', 'first_name', 'last_name',
+        'dhs_office', 'age', 'dhs_case_worker', 'race', 'gender', 'fav_color', 'shoe_size', 'clothing_size',
+        'interests', 'sponsor_name', 'gifts', 'church', 'in_facility', 'gifts_need_mailing', 'note'
     ]
     form_exclude_columns = [
         'id', 'is_split', 'child_id', 'church', 'note', 'sponsor_name', 'parent.phone', 'parent.email'
@@ -543,6 +543,7 @@ class ChildView(BaseView):
         'dhs_office': 'DHS Office',
         'fav_color': 'Fav. Color',
         'parent': 'Foster Parent',
+        'parent.gift_delivery': 'DHS Delivery',
         'note': 'Notes',
         'has_sponsor': 'Sponsored',
         'sponsor_name': 'Sponsor',
