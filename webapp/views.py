@@ -276,7 +276,8 @@ class RegisterView(BaseView):
 
     @expose('/sponsor', methods=['GET', 'POST'])
     def sponsor(self):
-        model_view = SponsorView(Sponsor, db.session)
+        # TEMPORARY: CSRF disabled for this form (see NoCsrfAdminForm).
+        model_view = PublicSponsorView(Sponsor, db.session)
         return_url = '/'
         id = get_mdict_item_or_list(request.args, 'id')
         if id is not None:
@@ -405,6 +406,18 @@ class AdminForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         self._obj = kwargs.get('obj')
         super().__init__(*args, **kwargs)
+
+
+class NoCsrfAdminForm(AdminForm):
+    """
+    AdminForm without the form-level CSRF check. TEMPORARY: used only by the
+    public "Register your wishlist" (sponsor) form while users are hitting
+    "The CSRF session token is missing." The route is also exempted from the
+    app-wide CSRFProtect check in create_app(). Remove both once the root
+    cause is found.
+    """
+    class Meta:
+        csrf = False
 
 
 class BaseView(_SecureViewMixin, ModelView):
@@ -802,6 +815,11 @@ class SponsorView(BaseView):
             )
         ])
     }
+
+
+class PublicSponsorView(SponsorView):
+    # TEMPORARY: used only by the public sponsor form; see NoCsrfAdminForm.
+    form_base_class = NoCsrfAdminForm
 
 
 class SponsorArchiveView(_ReadOnlyArchiveMixin, SponsorView):

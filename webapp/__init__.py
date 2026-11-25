@@ -124,6 +124,10 @@ def create_app(debug=True, config_override=None):
     from flask_wtf.csrf import CSRFProtect
     csrf = CSRFProtect(app)
     app.extensions['csrf'] = csrf
+    # TEMPORARY: skip CSRF on the public "Register your wishlist" (sponsor)
+    # form while users are hitting "The CSRF session token is missing."
+    # Remove this (and NoCsrfAdminForm in views.py) once the cause is found.
+    csrf.exempt('webapp.views.sponsor')
 
     from flask_limiter import Limiter
     from flask_limiter.util import get_remote_address
