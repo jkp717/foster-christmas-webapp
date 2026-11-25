@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
-from flask import flash, request, redirect, current_app, url_for
+from flask import flash, request, redirect, current_app, url_for, abort, Response
 from markupsafe import Markup
 from flask_admin import expose, BaseView, AdminIndexView
 from flask_admin.actions import action
@@ -394,6 +394,30 @@ class AdminReportsView(_SecureViewMixin, AdminIndexView):
     def download(self, report_name):
         if report_name.upper() == 'ALL_SPONSORED':
             return redirect(self.get_url('admin.child', flt1_sponsored_equals=1))
+
+    # Email lists for the TO line of an email blast: one comma-separated line,
+    # blanks dropped, duplicates removed (case-insensitive), sorted.
+    _EMAIL_LISTS = {
+        'sponsors': (Sponsor, 'sponsor-emails.txt'),
+        'parents': (Parent, 'foster-parent-emails.txt'),
+    }
+
+    @expose('/download/emails/<list_name>')
+    def download_emails(self, list_name):
+        if list_name not in self._EMAIL_LISTS:
+            abort(404)
+        model, filename = self._EMAIL_LISTS[list_name]
+        emails = {}
+        for (email,) in db.session.query(model.email):
+            email = (email or '').strip()
+            if email:
+                emails.setdefault(email.lower(), email)
+        body = ', '.join(emails[k] for k in sorted(emails))
+        return Response(
+            body,
+            mimetype='text/plain',
+            headers={'Content-Disposition': f'attachment; filename={filename}'},
+        )
 
 
 class AdminForm(FlaskForm):

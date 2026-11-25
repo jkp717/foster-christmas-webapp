@@ -75,3 +75,39 @@ class TestAdminViewsWithData:
         resp = client.get("/admin/sponsorarchive/")
         assert resp.status_code == 200
         assert b"Past" in resp.data
+
+
+class TestEmailListDownloads:
+    """Reports page: comma-separated email lists for email blasts."""
+
+    def test_reports_page_links_to_email_lists(self, client, login_admin):
+        login_admin()
+        html = client.get("/admin/").get_data(as_text=True)
+        assert "/admin/download/emails/sponsors" in html
+        assert "/admin/download/emails/parents" in html
+
+    @pytest.mark.parametrize("list_name,factory,filename", [
+        ("sponsors", "make_sponsor", "sponsor-emails.txt"),
+        ("parents", "make_parent", "foster-parent-emails.txt"),
+    ])
+    def test_email_list_is_deduped_comma_separated(self, app, client, login_admin, list_name, factory, filename):
+        from tests import factories as fac
+        make = getattr(fac, factory)
+        with app.app_context():
+            make(email="b@example.com")
+            make(email="a@example.com")
+            make(email="B@example.com")  # same address, different case
+        login_admin()
+        resp = client.get(f"/admin/download/emails/{list_name}")
+        assert resp.status_code == 200
+        assert filename in resp.headers["Content-Disposition"]
+        emails = [e.strip().lower() for e in resp.get_data(as_text=True).split(",")]
+        assert emails == ["a@example.com", "b@example.com"]
+
+    def test_unknown_email_list_is_404(self, client, login_admin):
+        login_admin()
+        assert client.get("/admin/download/emails/nope").status_code == 404
+
+    def test_email_list_requires_login(self, client):
+        resp = client.get("/admin/download/emails/sponsors")
+        assert resp.status_code in (302, 401, 403)
